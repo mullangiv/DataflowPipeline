@@ -1,0 +1,39 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2020-11-06T23:51:16Z",
+  "id": "team6assignment2",
+  "duration": 105,
+  "title": "Team6-Assignment2",
+  "authors": "Hardik Thakkar",
+  "summary": "In this codelab, you'll learn to",
+  "source": "13XSVMVt8dzO48TQ7ZzgJi9s_pIOAumyvZNa-YBVtEAQ",
+  "theme": "cloud",
+  "status": [
+    "published"
+  ],
+  "category": [
+    "Cloud"
+  ],
+  "tags": [
+    "cds17",
+    "chrome-dev-summit-2016",
+    "devfest18",
+    "gdd17",
+    "io2016",
+    "io2017",
+    "io2018",
+    "io2019",
+    "jsconfeu",
+    "kiosk",
+    "pwa-dev-summit",
+    "pwa-roadshow",
+    "tag-web",
+    "typtwd17",
+    "web"
+  ],
+  "feedback": "https://github.com/googlecodelabs/your-first-pwapp/issues",
+  "url": "team6assignment2"
+}

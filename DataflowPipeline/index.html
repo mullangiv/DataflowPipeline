@@ -1,0 +1,722 @@
+
+<!doctype html>
+
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1.0, user-scalable=yes">
+  <meta name="theme-color" content="#4F7DC9">
+  <meta charset="UTF-8">
+  <title>Team6-Assignment2</title>
+  <link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+  <link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+  <link rel="stylesheet" href="https://storage.googleapis.com/codelab-elements/codelab-elements.css">
+  <style>
+    .success {
+      color: #1e8e3e;
+    }
+    .error {
+      color: red;
+    }
+  </style>
+</head>
+<body>
+  <google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+  <google-codelab codelab-gaid=""
+                  id="team6assignment2"
+                  title="Team6-Assignment2"
+                  environment="web"
+                  feedback-link="https://github.com/googlecodelabs/your-first-pwapp/issues">
+    
+      <google-codelab-step label="Introduction to AWS Comprehend" duration="30">
+        <p>Reference:   <a href="https://aws.amazon.com/blogs/machine-learning/identifying-and-working-with-sensitive-healthcare-data-with-amazon-comprehend-medical/" target="_blank">Amazon Comprehend Medical</a></p>
+<p class="image-container"><img style="width: 624.00px" src="img\\da784a9ab6b18f53.png"></p>
+<h2 is-upgraded>Identifying and working with sensitive healthcare data with Amazon Comprehend Medical</h2>
+<p>In this blog post, I&#39;ll demonstrate how you can use a combination of <a href="https://aws.amazon.com/comprehend/medical/" target="_blank">Amazon Comprehend Medical</a>, <a href="https://aws.amazon.com/step-functions/" target="_blank">AWS Step Functions</a>, and <a href="https://aws.amazon.com/dynamodb/" target="_blank">Amazon DynamoDB</a> to identify sensitive health data and help support your compliance objectives. I&#39;ll then discuss some potential extensions of the architecture that are patterns customers often adopt.</p>
+<h3 is-upgraded><strong>The Architecture</strong></h3>
+<p>This architecture uses the following services:</p>
+<ul>
+<li>Amazon Comprehend Medical to identify entities within a body of text</li>
+<li>AWS Step Functions and <a href="https://aws.amazon.com/lambda/" target="_blank">AWS Lambda</a> to coordinate and execute the workflow</li>
+<li>Amazon DynamoDB to store the de-identified mapping</li>
+</ul>
+<p>This architecture and the code that follows are available as an <a href="https://aws.amazon.com/cloudformation/" target="_blank">AWS CloudFormation</a> template.</p>
+<h3 is-upgraded>The individual components</h3>
+<p>Like many modern applications being built on AWS, the individual components within this architecture are represented as Lambda functions. In this blog post, I&#39;ll show you how to build three Lambda functions:</p>
+<ul>
+<li>IdentifyPHI: Uses the Amazon Comprehend Medical API to detect and identify PHI entities from a body of text, such as a medical note.</li>
+<li>MaskEntities: Takes the entities from IdentifyPHI as input and masks them in the body of text</li>
+<li>DeidentifyEntities: Takes the entities from IdentifyPHI and applies a hash to each entity and stores that mapping in DynamoDB.</li>
+</ul>
+<h3 is-upgraded><strong>Identify PHI</strong></h3>
+<p>The following code reads in a JSON body, extracts PHI entities from the message, and returns a list of extracted entities.</p>
+<pre>from botocore.vendored import requests
+import json
+import boto3
+import logging
+import threading
+client = boto3.client(service_name=&#39;comprehendmedical&#39;)
+
+def timeout(event, context):
+    raise Exception(&#39;Execution is about to time out, exiting...&#39;)
+
+def extract_entities_from_message(message):
+    return client.detect_phi(Text=message)
+
+def handler(event, context):
+    # Add in context for Lambda to exit if needed
+    timer = threading.Timer((context.get_remaining_time_in_millis() / 1000.00) - 1, timeout, args=[event, context])
+    timer.start()
+    print (&#39;Received message payload. Will extract PII&#39;)
+    try:
+        # Extract the message from the event
+        message = event[&#39;body&#39;][&#39;message&#39;]
+        # Extract all entities from the message
+        entities_response = extract_entities_from_message(message)
+        entity_list = entities_response[&#39;Entities&#39;]
+        print (&#39;PII entity extraction completed&#39;)
+        return entity_list
+    except Exception as e:
+        logging.error(&#39;Exception: %s. Unable to extract PII entities from message&#39; % e)
+        raise e</pre>
+<p>The workhorse in this Lambda function is the Amazon Comprehend Medical DetectPHI API call, which returns a list of entities that Amazon Comprehend Medical identifies. Note that confidence scores are provided with each identified entity – these scores indicate the level of confidence in the accuracy of identified entities. You should take these confidence scores into account and review identified entities&#39; output to make sure they are correct. For more information on the returned data structure, see the <a href="https://docs.aws.amazon.com/comprehend/latest/dg/API_hera_DetectPHI.html" target="_blank">DetectPHI</a> documentation.</p>
+<h3 is-upgraded>Mask entities</h3>
+<p>There are multiple approaches to masking a message. In this example, we take each entity and replace it with a series of pound signs (#) corresponding to the length of the entity. The output is the message that has been input with each entity masked. You could choose whichever methods that are most meaningful to and appropriate for your business. For example, if there are multiple NAME PHI entities, you could order them as NAME1, NAME2, and so on.</p>
+<p>Here&#39;s the Lambda function:</p>
+<pre>from botocore.vendored import requests
+import json
+import boto3
+import logging
+import threading
+import sys
+
+def timeout(event, context):
+  raise Exception(&#39;Execution is about to time out, exiting...&#39;)
+
+def mask_entities_in_message(message, entity_list):
+  for entity in entity_list:
+      message = message.replace(entity[&#39;Text&#39;], &#39;#&#39; * len(entity[&#39;Text&#39;]))
+  return message
+
+def handler(event, context):
+  # Add in context for Lambda to exit if needed
+  timer = threading.Timer((context.get_remaining_time_in_millis() / 1000.00) - 1, timeout, args=[event, context])
+  timer.start()
+  print (&#39;Received message payload&#39;)
+  try:
+      # Extract the entities and message from the event
+      message = event[&#39;body&#39;][&#39;message&#39;]
+      entity_list = event[&#39;body&#39;][&#39;entities&#39;]
+      # Mask entities
+      masked_message = mask_entities_in_message(message, entity_list)
+      print (masked_message)
+      return masked_message
+  except Exception as e:
+      logging.error(&#39;Exception: %s. Unable to extract entities from message&#39; % e)
+      raise e</pre>
+<h2 is-upgraded>De-identify entities</h2>
+<p>There are multiple methods for de-identification. The example described in this blog post is meant to demonstrate one way you can de-identify sensitive entities so that they can be reidentified later on by a user with the appropriate permissions. Here, we do several steps:</p>
+<ol type="1" start="1">
+<li>Apply a salt to the entity.</li>
+<li>For each entity, generate a sha3-256 hash of the salted entity. Store this entity in a dictionary.</li>
+<li>Replace each entity in the message with the hash generated in step 1.</li>
+<li>Generate a sha3-256 hash of the de-identified message.</li>
+<li>Store the entities in DynamoDB with the hashed message as the hash key and the entity hash as the range key.</li>
+</ol>
+<p>Here is the Lambda function for this step. The EntityMap, which is a DynamoDB table, is read in as an environment variable:</p>
+<pre>from botocore.vendored import requests
+import json
+import boto3
+import hashlib
+import base64
+import logging
+import threading
+import uuid
+import os
+
+ddb = boto3.client(&#39;dynamodb&#39;)
+
+def timeout(event, context):
+    raise Exception(&#39;Execution is about to time out, exiting...&#39;)
+    
+def store_deidentified_message(message, entity_map, ddb_table):
+    hashed_message = hashlib.sha3_256(message.encode()).hexdigest()
+    for entity_hash in entity_map:
+        ddb.put_item(
+            TableName=ddb_table,
+            Item={
+                &#39;MessageHash&#39;: {
+                    &#39;S&#39;: hashed_message
+                },
+                &#39;EntityHash&#39;: {
+                    &#39;S&#39;: entity_hash
+                },
+                &#39;Entity&#39;: {
+                    &#39;S&#39;: entity_map[entity_hash]
+                }
+            }
+        )
+    return hashed_message
+    
+def deidentify_entities_in_message(message, entity_list):
+    entity_map = dict()
+    for entity in entity_list:
+      salted_entity = entity[&#39;Text&#39;] + str(uuid.uuid4())
+      hashkey = hashlib.sha3_256(salted_entity.encode()).hexdigest()
+      entity_map[hashkey] = entity[&#39;Text&#39;]
+      message = message.replace(entity[&#39;Text&#39;], hashkey)
+    return message, entity_map
+    
+def handler(event, context):
+    # Add in context for Lambda to exit if needed
+    timer = threading.Timer((context.get_remaining_time_in_millis() / 1000.00) - 1, timeout, args=[event, context])
+    timer.start()
+    print (&#39;Received message payload&#39;)
+    try:
+        # Extract the entities and message from the event
+        message = event[&#39;body&#39;][&#39;message&#39;]
+        entity_list = event[&#39;body&#39;][&#39;entities&#39;]
+        # Mask entities
+        deidentified_message, entity_map = deidentify_entities_in_message(message, entity_list)
+        hashed_message = store_deidentified_message(deidentified_message, entity_map, os.environ[&#39;EntityMap&#39;])
+        return {
+            &#34;deid_message&#34;: deidentified_message, 
+            &#34;hashed_message&#34;: hashed_message
+        }
+    except Exception as e:
+      logging.error(&#39;Exception: %s. Unable to extract entities from message&#39; % e)
+      raise e</pre>
+<h2 is-upgraded>Building the Boto3 Lambda layer</h2>
+<p>Next, we&#39;ll create a Lambda layer containing Boto3. This is a common best practice when deploying Lambda functions in production.</p>
+<p>Copy and paste the following code into a terminal. Feel free to change boto3env to a folder of your choice. The following example uses Python 3.6.</p>
+<p>Make a empty directory</p>
+<pre>mkdir botopackages </pre>
+<p><br>cd into a botopackages </p>
+<pre>cd botopackages </pre>
+<p class="image-container"><img style="width: 624.00px" src="img\\77b4ee896aa6cd16.png"></p>
+<pre>pip install boto3 --target ./</pre>
+<p class="image-container"><img style="width: 624.00px" src="img\\6e2e8b42f525b130.png"></p>
+<pre># install botocore
+pip install botocore --target ./</pre>
+<p class="image-container"><img style="width: 624.00px" src="img\\a95590056c88bdb7.png"></p>
+<pre># zip to four layer
+zip boto3layer.zip -r ./</pre>
+<p class="image-container"><img style="width: 624.00px" src="img\\e11a53daaf17db71.png"></p>
+<pre>aws lambda publish-layer-version --layer-name boto3-layer --zip-file fileb://boto3layer.zip</pre>
+<p class="image-container"><img style="width: 624.00px" src="img\\5b6fe210e7e89f6f.png"></p>
+<p><strong>Note the LayerVersionArn in the output. We&#39;ll use this shortly.</strong></p>
+<h2 is-upgraded>Building the state machine</h2>
+<p>The multiple steps within this workflow, such as data passed between steps and forking paths based on user input, can be best represented as a state machine. We&#39;ll use AWS Step Functions to define the state machines and execute the individual Lambda functions.</p>
+<p>The state machine reads in a JSON blob containing the message text to process as well as whether to mask or de-identify the message. The overall steps are:</p>
+<ol type="1" start="1">
+<li>Identify PHI entities using Amazon Comprehend Medical APIs.</li>
+<li>Determine whether to mask entities or de-identify.</li>
+<li>Based on results of Step 2, act accordingly.</li>
+</ol>
+<p>Here is the <a href="https://docs.aws.amazon.com/step-functions/latest/dg/concepts-amazon-states-language.html" target="_blank">Amazon States Language</a> code defining this state machine:</p>
+<pre>{
+  &#34;Comment&#34;: &#34;State Machine that anonymizes or deidentifies PHI&#34;,
+  &#34;StartAt&#34;: &#34;Identify PHI&#34;,
+  &#34;States&#34;: {
+    &#34;Identify PHI&#34;: {
+      &#34;Type&#34;: &#34;Task&#34;,
+      &#34;Resource&#34;: &#34;arn:aws:lambda:us-east-1:123456789012:function:IdentifyPHILambda&#34;,
+      &#34;InputPath&#34;: &#34;$&#34;,
+      &#34;ResultPath&#34;: &#34;$.body.entities&#34;,
+      &#34;Next&#34;: &#34;Anonymize Or De-identify&#34;
+    },
+    &#34;Anonymize Or De-identify&#34;: {
+      &#34;Type&#34;: &#34;Choice&#34;,
+      &#34;Choices&#34;: [
+        {
+          &#34;Variable&#34;: &#34;$.body.anonymizeOrDeidentify&#34;,
+          &#34;StringEquals&#34;: &#34;anonymize&#34;,
+          &#34;Next&#34;: &#34;Anonymize&#34;
+        },
+        {
+          &#34;Variable&#34;: &#34;$.body.anonymizeOrDeidentify&#34;,
+          &#34;StringEquals&#34;: &#34;deidentify&#34;,
+          &#34;Next&#34;: &#34;De-identify&#34;
+        }
+      ],
+      &#34;Default&#34;: &#34;Anonymize&#34;
+    },
+    &#34;Anonymize&#34;: {
+      &#34;Type&#34;: &#34;Task&#34;,
+      &#34;Resource&#34;: &#34;arn:aws:lambda:us-east-1:123456789012:function:MaskEntitiesLambda&#34;,
+      &#34;InputPath&#34;: &#34;$&#34;,
+      &#34;ResultPath&#34;: &#34;$.maskedMessage&#34;,
+      &#34;OutputPath&#34;: &#34;$.maskedMessage&#34;,
+      &#34;End&#34;: true
+    },
+    &#34;De-identify&#34;: {
+      &#34;Type&#34;: &#34;Task&#34;,
+      &#34;Resource&#34;: &#34;arn:aws:lambda:us-east-1:123456789012:function:DeidentifyLambda&#34;,
+      &#34;InputPath&#34;: &#34;$&#34;,
+      &#34;ResultPath&#34;: &#34;$.maskedMessage&#34;,
+      &#34;OutputPath&#34;: &#34;$.maskedMessage&#34;,
+      &#34;End&#34;: true
+    }
+  }
+} </pre>
+<h2 is-upgraded><strong>Testing the state machine</strong></h2>
+<p>As mentioned in the introduction, you can deploy the entire architecture using AWS CloudFormation. Launch the CloudFormation template now:</p>
+<p><img style="width: 106.67px" src="img\\132aafe40bba47d9.png"> <a href="https://console.aws.amazon.com/cloudformation/home?region=us-east-1#/stacks/create/template?stackName=phi-detect-blog&templateURL=https://s3.amazonaws.com/aws-ml-blog/artifacts/phi-detect/phi-detect.yaml" target="_blank">Launch</a></p>
+<p>Use the LayerVersionArn output that you noticed previously in the Boto3LayerArn CloudFormation parameter.</p>
+<p>After the CloudFormation stack deploys, you should have the following resources:</p>
+<ul>
+<li>The three Lambda functions</li>
+<li>A DynamoDB table containing mappings to the re-identified entities</li>
+<li>A Step Functions state machine</li>
+<li>AWS Identity and Access Management (IAM) resources</li>
+</ul>
+<p class="image-container"><img style="width: 549.00px" src="img\\dc8d2d2a94de93a7.png"></p>
+<p class="image-container"><img style="width: 624.00px" src="img\\2142777234e6c1a0.png"></p>
+<p>Let&#39;s take a fictional medical note, or rather a combination of what would be several notes, which was provided by the Amazon Comprehend Medical team. Notice that it&#39;s filled with typos, which would present challenges for rules-based approaches for entity identification.</p>
+<p>The input to the state machine takes two values. First, the note. Second, a choice of whether to anonymize the note or de-identify it. In this example we&#39;ll de-identify the message. Here&#39;s what that looks like:</p>
+<pre>{
+        &#34;body&#34;: {
+                &#34;message&#34;: &#34; Stay Free Medical Center \nEmergency Department \nClinical Summary \n12341 W. Bohannon Rd, Grantville, GA\nPhone: (770) 922-9800 \n\n\nPERSON INFORMATION\nName:  SALAZAR, CARLOS\nMRN:  RQ36114734 \nED Arrival Time:  11/12/2011 18:15\n \nSex:  Male \nDOB:  2/11/1961\n Age:   50 Years \nVisit Reason:  New onset A Fib, SOB\n Acuity:  2   Emergent Disposition:  Home/Self-Care \nAddress:  186 VALETINE, NE 69201\nPhone:  402 213-2221 \n \nSUBJECTIVE:\nCarlos came to the ED via ambulance accompanied by son, Jorge. He is a 50 yo male who was working at Food Corp when he had sudden onset of palpitations. Carlos stated his fater, Diego, also had palpitations through his life.\n \nProvider Contact Time:  11/12/2011 19:00\n Decision to Admit:  Not entered\n ED Departure Time:  11/23/2011 00:07\n \nDIAGNOSIS:  Hyperthyroidism \n Attending Provider: \nSaanvi Sarkar, MD\n \n Primary Nurse(s): \nJackson; Mateo\n \n\n Fill New Prescriptions:\nnepafenac (nepafenac 1 mg / 1mL Ophthalmic Suspension) 1 drop left eye every 12 hours 14 day(s)\nzofran (Ondansetron 4 mg oral tablet) 4 mg ORAL PRN\natropine sulfate 0.05 mcg / hyopscyamine sulfate 3.1 mcg / phenobartbital 48.6 MG / scopolamine hydrobromide 0.0195 mg ( Donnata ER oral tablet) 1 table PO PRN\nacetaminophen - hydrocodone ( Vicodin 5 mg - 500 mg oral tablet )  2 tablet(s) by Mouth every 6 hours as needed for pain\ndocusate sodium 100 mg oral capsule 100 mg by Mouth twice daily as needed for constipation\n\n \nAllergies:\n penicillins\n ibuprofen\n bee pollen\n \nPatient Education and Follow-up Information\n Instructions:\n   ED, Nausea (Custom) \n Follow up:\n  \n With:\nAddress:\nWhen:\n\nReturn to Emergency Department\n\n\n\nComments:\n\nNausea Vomiting\n\nNausea persists without control from anti-nausea medications  Projectile vomiting  Uncontrolled , consistent nausea &amp; vomiting  Blood or &#34;coffee grounds&#34; appearing material in vomit Medicine not kept down because of vomiting Weakness or dizziness along with nausea/vomiting Severe stomach pain while vomiting\n\nPain \nSevere Chest / Arm pain Severe squeezing or pressure in chest Severe sudden headache\nNew or uncontrolled pain New headache Chest discomfort Pounding heart Heart &#34;flip - flop&#34; feeling Painful Central Line site or area of &#34;tunnel&#34; Burning in chest or stomach Pain or burning while urinating Pain with infusion of medications or fluids into Central Line\n\n\nDiarrhea \n\nConstant or uncontrolled diarrhea New onset diarrhea Diarrhea with fever and abdominal cramping Whole pills passed in stool Greater than 5 times each day Stool which is bloody , burgundy or black Abdominal cramping\n\nFatigue\nUnable to wake\nDizziness Fatigue is getting worse Too tired to get out of bed or walk to the bathroom Staying in bed all day\n\nFever / Chills \n\nShaking chills , temperature may be normal Temperature greater than 38.3° C or 100.9° F by mouth Fever greater than 1 degree above usual if on steroids 24 Cold symptoms ( runny nose , watery eyes , sneezing , coughing ) \n\n\n\nWith:\nAddress:\nWhen:\n\nFollow up with primary care provider\n\n\n\nComments:\n\nCall tomorrow to make an appointment for the next 1-2 days and to start arranging PCP follow-up\n\n\nThank you for visiting the Stay Free Medical Center.\n \n&#34;,
+                &#34;anonymizeOrDeidentify&#34;: &#34;deidentify&#34;
+        }
+}</pre>
+<p>In the AWS CloudFormation console, navigate to the output page and note the state machine Amazon Resource Name (ARN), you will be using it later to invoke a state machine execution.</p>
+<p>You can test using the AWS CLI, your AWS SDK of choice, or the AWS Step Functions console. The following command shows what it would be like if you used the CLI. However, before you type the following command, copy the previous JSON and save it to example_note.json. Also replace the AWS Step Functions state machine ARN with the ARN in the CloudFormation output.</p>
+<pre>aws stepfunctions start-execution --state-machine-arn YOUR_STATEMACHINE_ARN --input file://example_note.json</pre>
+<p>The overall execution should take only a couple of seconds. Let&#39;s navigate to the AWS Step Functions console to see what happened.</p>
+<p class="image-container"><img style="width: 624.00px" src="img\\50d03802c6138919.png"></p>
+<p>You can view the output from the steps in the AWS Step Functions console. The previous message should now look like the following (formatted for ease of reading).  The de-identified message still contains valuable information that can be used, but the sensitive data has been masked using the previous masking example.</p>
+<p class="image-container"><img style="width: 624.00px" src="img\\557347d1737fe045.png"></p>
+<p class="image-container"><img style="width: 624.00px" src="img\\32b0bc91f4420bfb.png"></p>
+<p class="image-container"><img style="width: 624.00px" src="img\\9c16a0603137a13e.png"></p>
+<p>Here&#39;s what the table looks like after two runs with the same message.</p>
+<p class="image-container"><img style="width: 624.00px" src="img\\196e908db27a670.png"></p>
+<p>Because each entity is salted, there&#39;s no way of mapping that hash back to the original entity without using the DynamoDB mapping table, which you can notice by repeated entities having different hashes due to salting. Additionally, since you can manage DynamoDB access using IAM, you can control who has access to the items in your table. You can then use AWS CloudTrail to audit reads from your table containing sensitive information.</p>
+<p>Here&#39;s the output of anonymize </p>
+<p class="image-container"><img style="width: 624.00px" src="img\\75b71212172b34a4.png"></p>
+<p class="image-container"><img style="width: 624.00px" src="img\\d19ae41d4370ff03.png"></p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Notebook to Cloud" duration="45">
+        <p>Reference: <a href="https://colab.research.google.com/drive/1HUxNsHqqTZ1FRuveu6SS6gr6lCVe6QqO#scrollTo=vK3SaFDTkNfe" target="_blank">Notebook</a> </p>
+<h2 is-upgraded><strong>Part I: Python Performance</strong></h2>
+<p>Pre-requisites:</p>
+<ul>
+<li>Have <a href="https://docs.conda.io/projects/conda/en/latest/user-guide/install/" target="_blank">Conda</a> installed </li>
+<li>Clone <a href="https://github.com/Harvard-IACS/2020-ComputeFest.git" target="_blank">2020-ComputeFest</a></li>
+</ul>
+<p>The Jupyter notebook is a commonly used development environment when it comes to writing Python code. It is easy to learn and handy to use. By running a cell, you can interact with your code and see your results. Some pros of developing in a notebook are</p>
+<ul>
+<li>Easy to use: You can break your code into different cells and have immediate outputs. It&#39;s good for validating ideas and variable values.</li>
+<li>Visual and Interactive: You can see your changes in real-time.</li>
+<li>Non-linear development: You can go back to a cell and modify variables/functions at any time instead of rerunning the entire notebook.</li>
+</ul>
+<p>There is always a tradeoff when it comes to developing large-scale applications. In the first part of the workshop, we assume that participants are familiar with using Jupyter notebooks, and we focus on some advice for how to improve your efficiency when working with a notebook. We will concentrate on two areas for efficiency improvement:</p>
+<ol type="1" start="1">
+<li>How, why, and when to move from a notebook to a script</li>
+<li>Writing better, more performant code.</li>
+</ol>
+<p><strong>Using Jupyter Notebook:</strong></p>
+<p><a href="https://colab.research.google.com/drive/1eESxJh5H8GyGQa7027Vf4woPbIMFjY72" target="_blank">Notebook 1</a>: Used for initial development(253 KB)</p>
+<p><a href="https://colab.research.google.com/drive/1lZOynX7lKcJ-Oj0wFBz9P0NeHGhZFE0r" target="_blank">Notebook 2</a>: Cleaned up in order to run on cluster(3.3 MB)</p>
+<p><strong>Using Scripts:</strong></p>
+<p>To ensure we are all using the same environment (i.e. the same Python version and the same modules) please run the following commands.</p>
+<p class="image-container"><img style="width: 624.00px" src="img\\d8a1bee4f9d596b0.png"></p>
+<p>Running regenerative_morph.py as script(11 KB)</p>
+<p class="image-container"><img style="width: 624.38px" src="img\\b84812a828fd20b5.png"></p>
+<p class="image-container"><img style="width: 624.00px" src="img\\e7b55456549d1be7.png"></p>
+<p>Running regenerative_morph_slow.py as script</p>
+<h2 is-upgraded><img style="width: 624.00px" src="img\\2f099f7fba96a3e8.png"></h2>
+<p><strong>Conclusion :</strong></p>
+<ol type="1" start="1">
+<li>Script is more lightweight than Notebook.</li>
+<li>Script is easy to run on the cloud than Notebook.</li>
+<li>Script takes less time to execute than Notebook.</li>
+<li>Notebook is messier than Notebook.</li>
+</ol>
+<h2 is-upgraded>Part II: Serving a Model with Docker</h2>
+<p>Pre-requisites:</p>
+<ul>
+<li>Have <a href="https://docs.docker.com/get-docker/" target="_blank">Docker </a>&amp; <a href="https://www.postman.com/downloads/" target="_blank">Postman </a>installed</li>
+<li>Clone <a href="https://github.com/Harvard-IACS/2020-ComputeFest.git" target="_blank">2020-ComputeFest</a> </li>
+<li><strong>Have Docker running!</strong></li>
+</ul>
+<h3 is-upgraded>The Example</h3>
+<p>For this part, we will follow a simple Tensorflow text classification <a href="https://www.tensorflow.org/tutorials/keras/text_classification_with_hub" target="_blank">example</a>.</p>
+<ul>
+<li>Our goal is to serve a model trained to predict the sentiment (1 = &#34;positive&#34;, 0 = &#34;negative&#34;) of some text</li>
+<li>Training code can be found at: ml_deploy_demo<a href="https://colab.research.google.com/drive/1HUxNsHqqTZ1FRuveu6SS6gr6lCVe6QqO#" target="_blank">/ml_deply_demo/pipelines/keras.py</a>, but we will not focus on this part (see the code or example above for more details)</li>
+<li>We have already trained a pretty decent model and saved it to: 2020-ComputeFest<a href="https://colab.research.google.com/drive/1HUxNsHqqTZ1FRuveu6SS6gr6lCVe6QqO#" target="_blank">/notebook_to_cloud/ml_deploy_demo/models/imbd/v1.keras</a></li>
+</ul>
+<h3 is-upgraded>Serving a Model</h3>
+<p>Serving a machine learning model means running a server that will accept requests (e.g. HTTP POST) and return model predictions in its responses.</p>
+<p class="image-container"><img alt="ml_serving" style="width: 575.00px" src="img\\2812e8780977ac7.png"></p>
+<p>In 2020-ComputeFest<a href="https://colab.research.google.com/drive/1HUxNsHqqTZ1FRuveu6SS6gr6lCVe6QqO#" target="_blank">/notebook_to_cloud/ml_deploy_demo/ml_deploy_demo</a> we provide all of the code needed to serve the model. The key tools we use are:</p>
+<ol type="1" start="1">
+<li><a href="http://flask.palletsprojects.com/en/1.1.x/quickstart/#a-minimal-application" target="_blank">Flask</a>: a popular web development framework for Python</li>
+<li><a href="https://gunicorn.org/" target="_blank">gunicorn</a>: an HTTP server for running our app</li>
+</ol>
+<p>(Note: it can be also done using <a href="https://fastapi.tiangolo.com/" target="_blank">FastAPI</a>)</p>
+<p>Let&#39;s look at the code to understand what it&#39;s doing.</p>
+<ul>
+<li>api/app.py</li>
+<li>api/ml_app.py</li>
+<li>predict.py</li>
+<li>run.py</li>
+</ul>
+<h3 is-upgraded>Docker</h3>
+<p>Docker helps solve the problem in software development in which code can sometimes run differently on different platforms (e.g. Mac vs Windows), making it difficult to develop with others and deploy applications reliably.</p>
+<p>Docker solves this problem by &#34;containerizing&#34; applications: creating <em>lightweight</em> (compared to virtual machines) packages that contain <em>everything</em> needed to run an app and are operating system independent (as long as the OS is supported by the Docker Engine). Check out the <a href="https://www.docker.com/resources/what-container" target="_blank">Docker</a> website for much more info.</p>
+<p class="image-container"><img alt="docker" style="width: 624.00px" src="img\\cb6bcac98c602ac0.png"></p>
+<p>Docker is very useful when it comes to:</p>
+<ol type="1" start="1">
+<li>Cross-platform development</li>
+<li>Application deployment</li>
+</ol>
+<h3 is-upgraded>Dockerfile</h3>
+<p>You will see a file in 2020-ComputeFest<a href="https://colab.research.google.com/drive/1HUxNsHqqTZ1FRuveu6SS6gr6lCVe6QqO#" target="_blank">/notebook_to_cloud/ml_deploy_demo</a>/ that is called a Dockerfile. This file is what we will use to tell Docker how to construct our Docker Image (more info <a href="https://docs.docker.com/engine/reference/builder/" target="_blank">here</a>)</p>
+<p><strong>Terminology:</strong></p>
+<ul>
+<li><strong>Docker Image:</strong> artifact created by Docker from the Dockerfile</li>
+<li><strong>Docker Container</strong> running version of a Docker Image</li>
+</ul>
+<h3 is-upgraded>Building an Image</h3>
+<ol type="1" start="1">
+<li>Navigate to the ml_deploy_demo folder:<br>cd your_computefest_folder<a href="https://colab.research.google.com/drive/1HUxNsHqqTZ1FRuveu6SS6gr6lCVe6QqO#" target="_blank">/2020-ComputeFest/notebo</a>ok_to_cloud/ml_deploy_demo/<br>This folder contains a Dockerfile, which is essentially a playbook for building Docker Images.</li>
+<li>Build a Docker Image with<br>docker build -t ml_deploy_demo:latest .<br>(Don&#39;t forget the &#34;dot&#34;!)</li>
+</ol>
+<p>This will:</p>
+<ol type="1" start="1">
+<li>Use the current directory . to look for the Dockerfile, and then execute the instructions contained therein</li>
+<li>Tag (-t) the <em>Docker Image</em> that we create from the Dockerfile with the &#34;repository name&#34; ml_deploy_demo and &#34;tag&#34; latest.</li>
+</ol>
+<p class="image-container"><img style="width: 624.00px" src="img\\31817559844ca822.png"><img style="width: 624.00px" src="img\\6d3d1f43c4c28c63.png"></p>
+<p>If you were not able to build the image above, try command below to get a pre-built version of the Image</p>
+<pre> docker pull dylanrandle/ml_deploy_demo:latest</pre>
+<h3 is-upgraded>Running a Container</h3>
+<ol type="1" start="1">
+<li>Run docker images to list the set of Docker Images available on your machine</li>
+</ol>
+<ul>
+<li>We tagged the Image with repository ml_deploy_demo and tag latest</li>
+<li>docker images It&#39;s just a nice way to find the images and get some information about the Docker ID.</li>
+</ul>
+<ol type="1" start="2">
+<li>Run a Docker Container we just built. <strong>Specify the image ID</strong> in place of {image_id} (Note: You do NOT need the {} brackets for the actual ID.) . You can find the image ID in the IMAGE ID column after running the docker images command.<br>docker run -it --rm -p 5000:5000 {image_id} /bin/bash ml_deploy_demo/run.sh<br>This line actually runs our container and does a few important things:</li>
+</ol>
+<ul>
+<li>-it provides an interactive view</li>
+<li>--rm will delete the container when it is stopped</li>
+<li>-p 5000:5000 forwards port 5000 from the container to our computer (called localhost)</li>
+<li><a href="https://colab.research.google.com/drive/1HUxNsHqqTZ1FRuveu6SS6gr6lCVe6QqO#" target="_blank">/bin/bash</a> ml_deploy_demo/run.sh executes run.sh (starts the server)</li>
+</ul>
+<p>You can try this fancy command to run the Docker to auto run the container we just built: </p>
+<pre>docker run -it --rm -p 5000:5000 `docker images | grep ml_deploy_demo | awk &#39;{print $3}&#39; `  /bin/bash ml_deploy_demo/run.sh</pre>
+<ol type="1" start="3">
+<li>Test it by running (see Makefile for more info). You should see something like:</li>
+</ol>
+<pre>make test_api </pre>
+<p class="image-container"><img style="width: 624.00px" src="img\\80a36e8cd599903b.png"></p>
+<h3 is-upgraded>Sending Requests to the Model</h3>
+<p>If all is working properly, we should be able to send HTTP POST requests to http://localhost:5000/predict and get results back from our model!</p>
+<ol type="1" start="1">
+<li>Open Postman</li>
+<li>From Launchpad, click &#34;Create a request&#34; (or just hit the &#34;+&#34; button)</li>
+<li>In the dropdown, select POST</li>
+</ol>
+<ul>
+<li>There are several dropdown menus. The one we are referring to is in the middle pane just under &#34;Untitled Request&#34;.</li>
+<li>The default value is GET.</li>
+</ul>
+<ol type="1" start="4">
+<li>For the request URL, enter: http://localhost:5000/predict</li>
+</ol>
+<ul>
+<li>There is no need to click Send yet.</li>
+</ul>
+<ol type="1" start="5">
+<li>Click on the <strong>body</strong> tab.</li>
+</ol>
+<ul>
+<li>This is the 4th tab from the left just under POST.</li>
+</ul>
+<ol type="1" start="6">
+<li>Select &#34;raw&#34; for the data type.</li>
+</ol>
+<ul>
+<li>This is the 4th radio button from the right.</li>
+</ul>
+<ol type="1" start="7">
+<li>Select &#34;JSON&#34; from the drop-down menu</li>
+</ol>
+<ul>
+<li>This is to the right of &#34;GraphQL&#34;, the rightmost radio button</li>
+</ul>
+<ol type="1" start="8">
+<li>Enter something like this:<br>{&#34;data&#34;: [&#34;this workshop is fun&#34;]}</li>
+<li>Click Send. You should get a response similar to this:<br><img style="width: 624.00px" src="img\\36c5bb2bce452c3a.png"></li>
+</ol>
+<p>The first request may take a few seconds, because we are using a <a href="https://www.tensorflow.org/hub" target="_blank">Tensorflow-Hub</a> module which must be downloaded first as the code is currently written.</p>
+<p>This is a toy model: don&#39;t expect it to be perfect!</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="De/Re -identification of PII using GCP DLP" duration="30">
+        <p>Reference:  <a href="https://github.com/GoogleCloudPlatform/dlp-dataflow-deidentification" target="_blank">Dataflow DLP</a></p>
+<h2 is-upgraded><strong>Reference architecture</strong></h2>
+<p>The following diagram shows a reference architecture for using Google Cloud products to add a layer of security to sensitive datasets by using de-identification techniques.</p>
+<h2 is-upgraded><img style="width: 624.00px" src="img\\c101ae6c35025480.png"></h2>
+<p>The architecture consists of the following:</p>
+<ul>
+<li>Data de-identification streaming pipeline: De-identifies sensitive data in text using Dataflow. You can reuse the pipeline for multiple transformations and use cases.</li>
+<li>Configuration (DLP template and key) management: A managed de-identification configuration that is accessible by only a small group of people—for example, security admins—to avoid exposing de-identification methods and encryption keys.</li>
+<li>Data validation and re-identification pipeline: Validates copies of the de-identified data and uses a Dataflow pipeline to re-identify data at a large scale.</li>
+</ul>
+<h2 is-upgraded><strong>Quick Start</strong></h2>
+<ol type="1" start="1">
+<li>Create a project on <a href="https://console.cloud.google.com/projectcreate" target="_blank"><strong>GCP</strong></a></li>
+<li>View your created project on <a href="https://console.cloud.google.com/home/dashboard" target="_blank"><strong>GCP</strong></a></li>
+<li>Open shell on <a href="https://shell.cloud.google.com/" target="_blank"><strong>GCP</strong></a></li>
+<li>Export your project information </li>
+</ol>
+<pre>export PROJECT_ID=&lt;project_id&gt;
+export REGION=us-central1</pre>
+<ol type="1" start="5">
+<li>Set Project in Shell Session and enable API&#39;s</li>
+</ol>
+<pre>gcloud config set project ${PROJECT_ID}
+gcloud services enable dlp.googleapis.com
+gcloud services enable cloudkms.googleapis.com
+gcloud services enable bigquery.googleapis.com
+gcloud services enable storage-component.googleapis.com
+gcloud services enable dataflow.googleapis.com
+gcloud services enable cloudbuild.googleapis.com</pre>
+<ol type="1" start="6">
+<li>Create Buckets</li>
+</ol>
+<pre>export DATA_STORAGE_BUCKET=${PROJECT_ID}-data-storage-bucket
+export DATAFLOW_TEMP_BUCKET=${PROJECT_ID}-dataflow-temp-bucket
+gsutil mb -c standard -l ${REGION} gs://${DATA_STORAGE_BUCKET}
+gsutil mb -c standard -l ${REGION} gs://${DATAFLOW_TEMP_BUCKET}</pre>
+<p><a href="https://console.cloud.google.com/home/dashboard" target="_blank">GCP Home</a><img style="width: 334.00px" src="img\\9a787d6e05644a47.png"><a href="https://console.cloud.google.com/cloudshell/editor?cloudshell_git_repo=https://github.com/GoogleCloudPlatform/dlp-dataflow-deidentification.git" target="_blank">Cloud Shell </a></p>
+<p>Downloading the sample files</p>
+<p>You download the sample files to identify the columns that are required for de-identification transformations.</p>
+<ol type="1" start="1">
+<li>In Cloud Shell, download the sample dataset and scripts used in this tutorial to your local machine:</li>
+</ol>
+<pre>curl -X GET \
+    -o &#34;sample_data_scripts.tar.gz&#34; \ &#34;http://storage.googleapis.com/dataflow-dlp-solution-sample-data/sample_data_scripts.tar.gz&#34;</pre>
+<ol type="1" start="2">
+<li>Decompress and unpack the contents of the file:</li>
+</ol>
+<pre>tar -zxvf sample_data_scripts.tar.gz</pre>
+<ol type="1" start="3">
+<li>To validate the transfer, confirm that the output matches the list of the following files downloaded:</li>
+</ol>
+<pre>wc -l solution-test/CCRecords_1564602825.csv</pre>
+<ol type="1" start="4">
+<li>To identify which columns might require DLP de-identification, examine the header record in the CSV file:</li>
+</ol>
+<pre>head -1 solution-test/CCRecords_1564602825.csv</pre>
+<h2 is-upgraded><strong>Creating a BigQuery dataset</strong></h2>
+<ol type="1" start="1">
+<li>Create a dataset in <a href="https://cloud.google.com/bigquery/docs" target="_blank">BigQuery</a> where the Cloud DLP pipeline can store the de-identified data (Replace LOCATION with your preferred <a href="https://cloud.google.com/bigquery/docs/locations" target="_blank">BigQuery location</a>, for example US):</li>
+</ol>
+<pre>bq mk --location=LOCATION \
+    --description=&#34;De-Identified PII Dataset&#34; \
+    deid_dataset</pre>
+<h2 is-upgraded><strong>Creating a key encryption key (KEK)</strong></h2>
+<p>A token encryption key (TEK) is protected (<a href="https://cloud.google.com/kms/docs/key-wrapping" target="_blank">wrapped</a>) with another key (key encryption key) from Cloud Key Management Service (Cloud KMS):</p>
+<ol type="1" start="1">
+<li>In Cloud Shell, create a TEK locally. For this tutorial, you generate a random 32-character base-64 encryption key:</li>
+</ol>
+<pre>export TEK=$(openssl rand -base64 32); echo ${TEK}</pre>
+<ol type="1" start="2">
+<li>Export the key, key ring, and KEK file as variables:</li>
+</ol>
+<pre>export KEY_RING_NAME=my-kms-key-ring
+export KEY_NAME=my-kms-key
+export KEK_FILE_NAME=kek.json</pre>
+<ol type="1" start="3">
+<li>Enable the Cloud KMS admin and key encrypter roles for the Cloud Build service account:</li>
+</ol>
+<pre>export PROJECT_NUMBER=$(gcloud projects list \
+    --filter=${PROJECT_ID} --format=&#34;value(PROJECT_NUMBER)&#34;)
+gcloud projects add-iam-policy-binding ${PROJECT_ID} \
+    --member serviceAccount:$PROJECT_NUMBER@cloudbuild.gserviceaccount.com \
+    --role roles/cloudkms.cryptoKeyEncrypter
+gcloud projects add-iam-policy-binding ${PROJECT_ID} \
+    --member serviceAccount:$PROJECT_NUMBER@cloudbuild.gserviceaccount.com \
+    --role roles/cloudkms.admin</pre>
+<ol type="1" start="4">
+<li>Clone the following GitHub repository and go to the project root folder:</li>
+</ol>
+<pre>git clone https://github.com/GoogleCloudPlatform/dlp-dataflow-deidentification.git
+cd dlp-dataflow-deidentification</pre>
+<ol type="1" start="5">
+<li>Create a KEK:</li>
+</ol>
+<pre>gcloud builds submit . \
+    --config dlp-demo-part-1-crypto-key.yaml \
+    --substitutions \
+    _GCS_BUCKET_NAME=gs://${DATA_STORAGE_BUCKET},_KEY_RING_NAME=${KEY_RING_NAME},_KEY_NAME=${KEY_NAME},_TEK=${TEK},_KEK=${KEK_FILE_NAME},_API_KEY=$(gcloud auth print-access-token)</pre>
+<ol type="1" start="6">
+<li>Validate that the KEK was successfully created:</li>
+</ol>
+<pre>gsutil cat gs://${DATA_STORAGE_BUCKET}/${KEK_FILE_NAME}</pre>
+<h2 is-upgraded><strong>Creating the Cloud DLP templates</strong></h2>
+<p>At this point, you have investigated the sample dataset and determined which Cloud DLP transformations are required. For the columns requiring cryptographic transformations, you have also created a key encryption key (KEK). The next step is to execute a Cloud Build script to create Cloud DLP templates based on the required transformation and the KEK.</p>
+<h3 is-upgraded><strong>Creating a service account for Cloud DLP</strong></h3>
+<ol type="1" start="1">
+<li>In Cloud Shell, create a service account:</li>
+</ol>
+<pre>export SERVICE_ACCOUNT_NAME=my-service-account
+gcloud iam service-accounts create ${SERVICE_ACCOUNT_NAME} \
+    --display-name &#34;DLP Demo Service Account&#34;</pre>
+<ol type="1" start="2">
+<li>Create a JSON API key file called service-account-key.json for the service account:</li>
+</ol>
+<pre>gcloud iam service-accounts keys create \
+    --iam-account ${SERVICE_ACCOUNT_NAME}@${PROJECT_ID}.iam.gserviceaccount.com \
+    service-account-key.json
+</pre>
+<ol type="1" start="3">
+<li>Assign the project editor and storage admin role to the service account:</li>
+</ol>
+<pre>gcloud projects add-iam-policy-binding ${PROJECT_ID} \
+    --member serviceAccount:${SERVICE_ACCOUNT_NAME}@${PROJECT_ID}.iam.gserviceaccount.com \
+    --role roles/editor
+gcloud projects add-iam-policy-binding ${PROJECT_ID} \
+    --member serviceAccount:${SERVICE_ACCOUNT_NAME}@${PROJECT_ID}.iam.gserviceaccount.com \
+    --role roles/storage.admin
+</pre>
+<ol type="1" start="4">
+<li>Activate the service account:</li>
+</ol>
+<pre>gcloud auth activate-service-account --key-file service-account-key.json</pre>
+<h3 is-upgraded><strong>Creating the templates</strong></h3>
+<ol type="1" start="1">
+<li>In Cloud Shell, execute the Cloud Build script to create the templates:</li>
+</ol>
+<pre>gcloud builds submit . \
+    --config dlp-demo-part-2-dlp-template.yaml \
+    --substitutions \
+    _KEK_CONFIG_FILE=gs://${DATA_STORAGE_BUCKET}/${KEK_FILE_NAME},_GCS_BUCKET_NAME=gs://${DATA_STORAGE_BUCKET},_API_KEY=$(gcloud auth print-access-token)</pre>
+<ol type="1" start="2">
+<li>Validate that the de-identification template was successfully created:</li>
+</ol>
+<pre>gsutil cp gs://${DATA_STORAGE_BUCKET}/deid-template.json .
+cat deid-template.json</pre>
+<ol type="1" start="3">
+<li>Validate that the inspect template was successfully created:</li>
+</ol>
+<pre>gsutil cp gs://${DATA_STORAGE_BUCKET}/inspect-template.json .
+cat inspect-template.json</pre>
+<ol type="1" start="4">
+<li>Validate that the re-identification template was successfully created:</li>
+</ol>
+<pre>gsutil cp gs://${DATA_STORAGE_BUCKET}/reid-template.json .
+cat reid-template.json</pre>
+<ol type="1" start="5">
+<li>Export the Cloud DLP templates names:</li>
+</ol>
+<pre>export DEID_TEMPLATE_NAME=$(jq -r &#39;.name&#39; deid-template.json)
+export INSPECT_TEMPLATE_NAME=$(jq -r &#39;.name&#39; inspect-template.json)
+export REID_TEMPLATE_NAME=$(jq -r &#39;.name&#39; reid-template.json)</pre>
+<ol type="1" start="6">
+<li>Validate that the following variables exist:</li>
+</ol>
+<pre>echo ${DATA_STORAGE_BUCKET}
+echo ${DATAFLOW_TEMP_BUCKET}
+echo ${DEID_TEMPLATE_NAME}
+echo ${INSPECT_TEMPLATE_NAME}
+echo ${REID_TEMPLATE_NAME}</pre>
+<h2 is-upgraded><strong>Running the pipeline</strong></h2>
+<ol type="1" start="1">
+<li>In Cloud Shell, set up application default credentials.</li>
+</ol>
+<pre>gcloud auth activate-service-account \
+    ${SERVICE_ACCOUNT_NAME}@${PROJECT_ID}.iam.gserviceaccount.com \
+    --key-file=service-account-key.json --project=${PROJECT_ID}
+export GOOGLE_APPLICATION_CREDENTIALS=service-account-key.json</pre>
+<ol type="1" start="2">
+<li>Running the pipeline:</li>
+</ol>
+<pre>export JOB_ID=my-deid-job
+gcloud dataflow jobs run ${JOB_ID}  \
+    --gcs-location gs://dataflow-templates/latest/Stream_DLP_GCS_Text_to_BigQuery \    --region ${REGION}
+    --parameters \
+&#34;inputFilePattern=gs://${DATA_STORAGE_BUCKET}/CCRecords_1564602825.csv,dlpProjectId=${PROJECT_ID},deidentifyTemplateName=${DEID_TEMPLATE_NAME},inspectTemplateName=${INSPECT_TEMPLATE_NAME},datasetName=deid_dataset,batchSize=500&#34;</pre>
+<ol type="1" start="3">
+<li>To monitor the pipeline, in the Google Cloud Console, go to the <a href="https://console.cloud.google.com/dataflow/jobs" target="_blank"><strong>Dataflow</strong></a>page.<img style="width: 369.00px" src="img\\1b23315227f840c1.png"></li>
+<li>Click on the job&#39;s ID (my-deid-job). You see the job&#39;s graph:</li>
+</ol>
+<p class="image-container"><img style="width: 624.00px" src="img\\98939903e4be32e1.png"></p>
+<ol type="1" start="5">
+<li>To validate the amount of data processed by the pipeline, click <strong>Process Tokenized Data</strong>.</li>
+</ol>
+<p class="image-container"><img style="width: 624.00px" src="img\\acba010f67ed9f2.png"></p>
+<ol type="1" start="6">
+<li>To validate the total number of records inserted in the BigQuery tables, click <strong>Write To BQ</strong>.</li>
+</ol>
+<h2 is-upgraded>Validating the de-identified dataset in BigQuery</h2>
+<ol type="1" start="1">
+<li>In the Cloud Console, go to the BigQuery <a href="https://console.cloud.google.com/bigquery" target="_blank"><strong>Query editor</strong></a> page.<img style="width: 624.00px" src="img\\60357517cdcb2b81.png"></li>
+<li>Validate that the number of rows in the table is 100,000:</li>
+</ol>
+<pre>select count(*) as number_of_rows
+from `deid_dataset.CCRecords_*` LIMIT 1</pre>
+<ol type="1" start="3">
+<li>Query the de-identified copies of the dataset for the ID 76901:<img style="width: 624.00px" src="img\\19ae06220007abca.png"></li>
+</ol>
+<p>In Cloud Shell, compare the output from the previous step with the original dataset in the CSV file for the ID 76901:hardik_thakkar00@cloudshell:<strong>~ (cgp-dlp)</strong>$ awk -F &#34;,&#34; &#39;$1 == 76901&#39; solution-test/CCRecords_1564602825.csv76901,AX,American Express,American Express,376467075604410,Francis U Riggs,03/2013,03/2015,14,7425,57000,43,623-12-9395,Product Manager,ES20 6871 8240 0493 0298 3587 dsumpton1nc4@reddit.com 102-326-2388 hugedomains.com Maggio:5282194096147081hardik_thakkar00@cloudshell:<strong>~ (cgp-dlp)</strong>$</p>
+<h2 is-upgraded>Re-identifying the dataset from BigQuery</h2>
+<ol type="1" start="1">
+<li>In Cloud Shell, create a Pub/Sub topic where the re-identified values will be published:</li>
+</ol>
+<pre>export TOPIC_ID=&#34;reid-topic&#34;
+gcloud pubsub topics create ${TOPIC_ID}</pre>
+<ol type="1" start="2">
+<li>Create a Pub/Sub subscription for the topic:</li>
+</ol>
+<pre>export SUBSCRIPTION_ID=&#34;reid-subscription&#34;
+gcloud pubsub subscriptions create ${SUBSCRIPTION_ID} --topic=${TOPIC_ID}</pre>
+<ol type="1" start="3">
+<li>Export the BigQuery SQL query:</li>
+</ol>
+<pre>export QUERY=&#39;select id,card_number,card_holders_name
+from `deid_dataset.CCRecords_1564602825`
+where safe_cast(credit_limit as int64)&gt;100000 and safe_cast(age as int64)&gt;50
+group by id,card_number,card_holders_name limit 10&#39;</pre>
+<ol type="1" start="4">
+<li>Upload the query in the data storage bucket:</li>
+</ol>
+<pre> cat &lt;&lt; EOF | gsutil cp - gs://${DATA_STORAGE_BUCKET}/reid_query.sql
+  ${QUERY}
+  EOF</pre>
+<ol type="1" start="5">
+<li>Trigger the pipeline:</li>
+</ol>
+<pre>gcloud beta dataflow flex-template run &#34;gcp-dlp-reid-demo&#34; --project=${​​​​​​​PROJECT_ID}​​​​​​​     --region=${​​​​​​​REGION}​​​​​​​     --template-file-gcs-location=gs://dataflow-dlp-solution-sample-data/dynamic_template_dlp_v2.json --parameters=^~^streaming=true~enableStreamingEngine=true~tempLocation=gs://${​​​​​​​DATAFLOW_TEMP_BUCKET}​​​​​​​/temp~numWorkers=5~maxNumWorkers=10~runner=DataflowRunner~tableRef=${​​​​​​​PROJECT_ID}​​​​​​​:demo_dataset.CCRecords_1564602825~dataset=demo_dataset~autoscalingAlgorithm=THROUGHPUT_BASED~workerMachineType=n1-highmem-8~topic=projects/${​​​​​​​PROJECT_ID}​​​​​​​/topics/${​​​​​​​TOPIC_ID}​​​​​​​~deidentifyTemplateName=${​​​​​​​REID_TEMPLATE_NAME}​​​​​​​~DLPMethod=REID~keyRange=1024~queryPath=gs://${​​​​​​​DATA_STORAGE_BUCKET}​​​​​​​/reid_query.sql</pre>
+<ol type="1" start="6">
+<li>To monitor the pipeline, in the Cloud Console, go to the <a href="https://console.cloud.google.com/dataflow/jobs" target="_blank"><strong>Dataflow</strong></a>page.</li>
+</ol>
+<p class="image-container"><img style="width: 624.00px" src="img\\e7ab6b2ab7021db7.png"></p>
+<p class="image-container"><img style="width: 624.00px" src="img\\b43a503f1248e00a.png"></p>
+<p class="image-container"><img style="width: 624.00px" src="img\\3adbe6db098e2b37.png"></p>
+
+
+      </google-codelab-step>
+    
+  </google-codelab>
+
+  <script src="https://storage.googleapis.com/codelab-elements/native-shim.js"></script>
+  <script src="https://storage.googleapis.com/codelab-elements/custom-elements.min.js"></script>
+  <script src="https://storage.googleapis.com/codelab-elements/prettify.js"></script>
+  <script src="https://storage.googleapis.com/codelab-elements/codelab-elements.js"></script>
+  <script src="//support.google.com/inapp/api.js"></script>
+
+</body>
+</html>
