@@ -17,5 +17,6 @@ pip install fastapi
 
 
 # Steps to run this project
-Run below command in command prompt.
+Run below command in command prompt
+
 uvicorn fastapi_daas:app --reload
