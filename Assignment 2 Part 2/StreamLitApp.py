@@ -196,7 +196,7 @@ if chosenRadioButton == 'De/Re-Identify':
         Hash = st.text_input("Hash")
         st.subheader('_Click button to Re-Identify Entities_')
         if st.button('Re-Identify'):
-            response = requests.get(f"http://127.0.0.1:8000/reIdentifyEntitiesverified={authValue}&Hash={Hash}")
+            response = requests.get(f"http://127.0.0.1:8000/reIdentifyEntities?verified={authValue}&Hash={Hash}")
             data_list = response.json()
             #b=data_list['body']
             st.header(data_list)
