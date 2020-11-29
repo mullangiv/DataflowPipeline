@@ -14,9 +14,10 @@ from recommendAPI import recommend_user_user, recommend_item_item, recommend_sim
 from mangum import Mangum
 from fastapi_cloudauth.cognito import Cognito, CognitoCurrentUser, CognitoClaims
 from urllib.parse import urlparse,urlsplit
+from boto3.dynamodb.conditions import Key
 #from botocore.vendored import requests
 #Def Vars
-app = FastAPI()
+app = FastAPI(root_path="/prod")
 fileName = "" 
 #Def AWS Config
 userRegion = "us-east-1"
@@ -25,6 +26,9 @@ userPool = "us-east-1_w6Msc6CWC"
 auth = Cognito(region= userRegion, userPoolId= userPool)
 getUser = CognitoCurrentUser(region= userRegion, userPoolId= userPool)
 cidp = boto3.client('cognito-idp')
+dynamodb = boto3.resource('dynamodb')
+dynamodbClient = boto3.client("dynamodb")
+table = dynamodb.Table('DeidentificationTable')
 loginPassword = loginName = None
 JWT = {}
 #Config for Lambda
@@ -84,8 +88,6 @@ async def scrapeCallTranscripts(verified: bool, url: str, page: int):
                 header=str(header)
                 base=str(base)
                 url = header + "://" + base + actualURL
-                #url = "http://seekingalpha.com" + actualURL
-                print("************")
                 actualURL = str(actualURL.replace("/article/",""))
                 print(actualURL)
                 scrapePageData(url,actualURL,actualList)
@@ -115,35 +117,8 @@ def scrapdatadisplay(verified: bool):
     else:
         result = "Please Authenticate User"
         return result
+
 # API 3
-@app.get("/identifyEntities", tags=["Identify Entities"])
-def identifyPIIEntity(verified: bool, fileName: str):
-
-    if(verified == True):
-        s3 = boto3.client("s3")
-        bucket = "scrapecalldata"
-        key = fileName
-        file = s3.get_object(Bucket=bucket, Key=key)
-        paragraph = str(file['Body'].read())
-        paragraph = paragraph[:5000]
-        comprehend = boto3.client("comprehend")
-        entities = comprehend.detect_entities(Text=paragraph, LanguageCode = "en")
-        keyphrase = comprehend.detect_key_phrases(Text=paragraph, LanguageCode = "en")
-        s3 = boto3.resource('s3')
-        BUCKET_NAME = "identifyentity"
-    #Modify
-        OUTPUT_NAME = f"{fileName}.json"
-        OUTPUT_BODY = json.dumps(entities)
-    #print(f"[INFO] Saving Data to S3 {BUCKET_NAME} Bucket...")
-        s3.Bucket(BUCKET_NAME).put_object(Key=OUTPUT_NAME, Body=OUTPUT_BODY)
-    #print(f"[INFO]Job done!!")
-        print(keyphrase)
-        return keyphrase
-
-    else:
-        result = "Please Authenticate User"
-        return result
-# API 4
 @app.get("/identifyEntities", tags=["Identify"])
 def identifyPIIEntity(verified: bool, fileName: str):
 
@@ -159,17 +134,17 @@ def identifyPIIEntity(verified: bool, fileName: str):
         keyphrase = comprehend.detect_key_phrases(Text=paragraph, LanguageCode = "en")
         s3 = boto3.resource('s3')
         BUCKET_NAME = "identifyentity"
-    #Modify
+        #Modify
         OUTPUT_NAME = f"{fileName}Entities.json"
         OUTPUT_BODY = json.dumps(entities)
-    #print(f"[INFO] Saving Data to S3 {BUCKET_NAME} Bucket...")
+        #print(f"[INFO] Saving Data to S3 {BUCKET_NAME} Bucket...")
         s3.Bucket(BUCKET_NAME).put_object(Key=OUTPUT_NAME, Body=OUTPUT_BODY)
-    #print(f"[INFO]Job done!!")
+        #print(f"[INFO]Job done!!")
         return entities
     else:
         result = "Please Authenticate User"
         return result
-# API 5
+# API 4
 @app.get("/identifyKeyphrases", tags=["Identify"])
 def identifyPIIEntity(verified: bool, fileName: str):
 
@@ -185,17 +160,17 @@ def identifyPIIEntity(verified: bool, fileName: str):
         keyphrase = comprehend.detect_key_phrases(Text=paragraph, LanguageCode = "en")
         s3 = boto3.resource('s3')
         BUCKET_NAME = "identifyentity"
-    #Modify
+        #Modify
         OUTPUT_NAME = f"{fileName}KeyPhrases.json"
         OUTPUT_BODY = json.dumps(keyphrase)
-    #print(f"[INFO] Saving Data to S3 {BUCKET_NAME} Bucket...")
+        #print(f"[INFO] Saving Data to S3 {BUCKET_NAME} Bucket...")
         s3.Bucket(BUCKET_NAME).put_object(Key=OUTPUT_NAME, Body=OUTPUT_BODY)
-    #print(f"[INFO]Job done!!")
+        #print(f"[INFO]Job done!!")
         return keyphrase
     else:
         result = "Please Authenticate User"
         return result
-# API 6
+# API 5
 @app.get("/maskEntities", tags=["Anonymize Entities"])
 def maskEntities(verified: bool, fileName:str, maskCharacter):
     if(verified == True):
@@ -226,7 +201,7 @@ def maskEntities(verified: bool, fileName:str, maskCharacter):
     else:
         result = "Please Authenticate User"
         return result
-# API 7
+# API 6
 @app.get("/getMaskedEntities", tags=["Anonymize Entities"])
 def getMaskedEntities(verified: bool, jobID: str, fileName: str):
     if(verified == True):
@@ -236,9 +211,21 @@ def getMaskedEntities(verified: bool, jobID: str, fileName: str):
         jobStatus = comprehend.describe_pii_entities_detection_job(
         JobId= jobID
         )
-        time.sleep(36)
+        #time.sleep(36)
         key = fileName + ".txt.out"
         print(f"Job Status {jobStatus}")
+        JD = jobStatus['PiiEntitiesDetectionJobProperties']['JobStatus']
+        print(JD)
+        JD = str(JD)
+        while JD == "IN_PROGRESS":
+            comprehend = boto3.client(service_name='comprehend', region_name='us-east-1')
+            jobStatus = comprehend.describe_pii_entities_detection_job(
+            JobId= jobID
+            )
+            JD = jobStatus['PiiEntitiesDetectionJobProperties']['JobStatus']
+            print(JD)
+            JD = str(JD)
+            time.sleep(36)
         prefix = jobStatus['PiiEntitiesDetectionJobProperties']['OutputDataConfig']['S3Uri']
         prefix = prefix.replace("s3://identifyentity/","")
         print(jobStatus['PiiEntitiesDetectionJobProperties']['OutputDataConfig']['S3Uri'])
@@ -253,7 +240,7 @@ def getMaskedEntities(verified: bool, jobID: str, fileName: str):
     else:
         result = "Please Authenticate User"
         return result
-# API 8
+# API 7
 @app.get("/replaceEntities", tags=["Anonymize Entities"])
 def replaceEntities(verified: bool, fileName:str, maskCharacter):
     if(verified == True):
@@ -283,7 +270,7 @@ def replaceEntities(verified: bool, fileName:str, maskCharacter):
     else:
         result = "Please Authenticate User"
         return result
-# API 9
+# API 8
 @app.get("/displayEntities", tags=["Anonymize Entities"])
 def displayEntities(verified: bool, jobID: str, fileName: str):
     if(verified == True):
@@ -293,9 +280,21 @@ def displayEntities(verified: bool, jobID: str, fileName: str):
         jobStatus = comprehend.describe_pii_entities_detection_job(
         JobId= jobID
         )
-        time.sleep(36)
+        #time.sleep(36)
         key = fileName + ".txt.out"
         print(f"Job Status {jobStatus}")
+        JD = jobStatus['PiiEntitiesDetectionJobProperties']['JobStatus']
+        print(JD)
+        JD = str(JD)
+        while JD == "IN_PROGRESS":
+            comprehend = boto3.client(service_name='comprehend', region_name='us-east-1')
+            jobStatus = comprehend.describe_pii_entities_detection_job(
+            JobId= jobID
+            )
+            JD = jobStatus['PiiEntitiesDetectionJobProperties']['JobStatus']
+            print(JD)
+            JD = str(JD)
+            time.sleep(36)
         prefix = jobStatus['PiiEntitiesDetectionJobProperties']['OutputDataConfig']['S3Uri']
         prefix = prefix.replace("s3://identifyentity/","")
         print(jobStatus['PiiEntitiesDetectionJobProperties']['OutputDataConfig']['S3Uri'])
@@ -310,7 +309,7 @@ def displayEntities(verified: bool, jobID: str, fileName: str):
     else:
         result = "Please Authenticate User"
         return result
-# API 10
+# API 9
 @app.get("/Authentication", tags=["Auth"])
 async def userauthentication(usrName: str, usrPassword: str): 
     OTP = usrName+usrPassword
@@ -332,7 +331,7 @@ async def userauthentication(usrName: str, usrPassword: str):
         response = "Please enter valid username/password!!"
     print(verified)
     return verified
-# API 11
+# API 10
 #Deidentification generate HashMessage
 @app.get("/deIdentifyEntities", tags=["De/Re-Identify"])
 #async def deIdentifyEntities(JobName: str, verified: bool): 
@@ -342,7 +341,8 @@ async def deIdentifyEntities(verified: bool,fileName: str,JobName: str):
         #The name of the execution user input
         EXECUTION_NAME = JobName
         key = fileName + ".txt"
-        fileobj = s3client.get_object( Bucket='scrapecalldata',Key=key) 
+        s3 = boto3.client("s3")
+        fileobj = s3.get_object(Bucket='scrapecalldata',Key=key) 
         filedata = fileobj['Body'].read()
         text = filedata.decode('utf-8') 
         #The string that contains the JSON input data for the execution
@@ -376,7 +376,6 @@ async def deIdentifyEntities(verified: bool,fileName: str,JobName: str):
         print(response)
         outputString = response.get('events')[0].get('executionSucceededEventDetails').get('output')
         dictOutput = json.loads(outputString)
-        #print(dictOutput)
         hash_message = dictOutput.get('hashed_message')
         hash = str(hash_message).replace('hashed_message','')
         print(hash)
@@ -388,25 +387,21 @@ async def deIdentifyEntities(verified: bool,fileName: str,JobName: str):
     else:
         result = "Please Authenticate User"
         return result
-# API 12
+# API 11
 @app.get("/reIdentifyEntities", tags=["De/Re-Identify"])
 async def reIdentifyEntities(verified: bool, Hash: str): 
     if(verified == True):
-        dynamodb = boto3.resource('dynamodb')
-        dynamodbClient = boto3.client("dynamodb")
-        table = dynamodb.Table('DeidentificationTable')
-        #Hash = 'a7a8a696aa3c3fcca24462f56221d73a5058d9a31dfb53e82b1be4f1589fd519'
         fileName = Hash
         #Query as per user hashhtsl
-        # #getting user deidentified_message from s3
+        #getting user deidentified_message from s3
         s3 = boto3.client("s3")
         bucket = "dereidbucket"
         key = fileName + ".txt"
+        Hash = Hash
         file = s3.get_object(Bucket=bucket, Key=key)
         paragraph = str(file['Body'].read())
         #paragraph = str(file['Body']['deidentified_message'].read()) // to use this if the file is jSON
         #cleaning input file using cheap thrills
-        # message = str(paragraph)
         print("******************Before********************")
         print(paragraph)
         #paragraph = json.dumps(paragraph)
@@ -425,16 +420,18 @@ async def reIdentifyEntities(verified: bool, Hash: str):
         for tableItem in tableList:
             entityValues = tableItem.get("Entity")
             entityHash =  tableItem.get("EntityHash")
-            # message = message.replace(entityHash,entityValues)
             paragraph = paragraph.replace(entityHash,entityValues)
 
         for tableItem in tableList:
             entityValues = tableItem.get("Entity")
             entityHash =  tableItem.get("EntityHash")
-            # message = message.replace(entityHash,entityValues)
             paragraph = paragraph.replace(entityHash,entityValues)
 
-        # print (paragraph)
+        for tableItem in tableList:
+            entityValues = tableItem.get("Entity")
+            entityHash =  tableItem.get("EntityHash")
+            paragraph = paragraph.replace(entityHash,entityValues)
+
         paragraph = paragraph.replace("b","")
         paragraph = paragraph.replace("'","")
         paragraph = paragraph.replace('" ','')
