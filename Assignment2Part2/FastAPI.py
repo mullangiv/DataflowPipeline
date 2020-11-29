@@ -431,7 +431,7 @@ async def reIdentifyEntities(verified: bool, Hash: str):
             entityValues = tableItem.get("Entity")
             entityHash =  tableItem.get("EntityHash")
             paragraph = paragraph.replace(entityHash,entityValues)
-
+            
         paragraph = paragraph.replace("b","")
         paragraph = paragraph.replace("'","")
         paragraph = paragraph.replace('" ','')
