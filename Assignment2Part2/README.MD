@@ -31,6 +31,6 @@ pip install requests
 # Steps to run this project
 Run below command in command prompt
 
-streamlit run StreamlitApp.py
+streamlit run StreamLitApp.py
 
-uvicorn fastapi:app --reload
+uvicorn FastAPI:app --reload
