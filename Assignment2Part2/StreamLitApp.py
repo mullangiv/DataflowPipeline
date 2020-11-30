@@ -120,11 +120,95 @@ if chosenRadioButton == 'Anonymize':
         st.header('Mask Entities')
         st.info('Please enter Input File Name for Anonymization Job')
         fileName = st.text_input("File Name")
+        st.info('Please enter Input File Name for Anonymization Job')
+        drop = st.selectbox('Please select Entities for Anonymization',('ALL', 'Select'))
+        st.write('You selected:', drop)
+        entityList = ""
+        if drop == 'ALL':
+            ALL = st.checkbox("ALL", value=False, key=None) #use ur brain bro make this a drop
+            if ALL:
+                entityList = "ALL"
+                entityList = '"'+entityList+'"'
+        else:
+            st.info('Please select the Entity List for Masking') #use this info for the drop and select option
+            # rest in the drop select
+            CREDIT_DEBIT_NUMBER = st.checkbox("CREDIT_DEBIT_NUMBER", value=False, key=None)
+            if CREDIT_DEBIT_NUMBER:
+                entityList = entityList+"CREDIT_DEBIT_NUMBER"+","
+            AWS_ACCESS_KEY = st.checkbox("AWS_ACCESS_KEY", value=False, key=None) 
+            if AWS_ACCESS_KEY:
+                entityList = entityList+"AWS_ACCESS_KEY"+","
+            BANK_ROUTING = st.checkbox("BANK_ROUTING", value=False, key=None) 
+            if BANK_ROUTING:
+                entityList = entityList+"BANK_ROUTING"+","
+            MAC_ADDRESS = st.checkbox("MAC_ADDRESS", value=False, key=None) 
+            if MAC_ADDRESS:
+                entityList = entityList+"MAC_ADDRESS"+","
+            DRIVER_ID = st.checkbox("DRIVER_ID", value=False, key=None) 
+            if DRIVER_ID:
+                entityList = entityList+"DRIVER_ID"+","
+            CREDIT_DEBIT_CVV = st.checkbox("CREDIT_DEBIT_CVV", value=False, key=None) 
+            if CREDIT_DEBIT_CVV:
+                entityList = entityList+"CREDIT_DEBIT_CVV"+","
+            IP_ADDRESS = st.checkbox("IP_ADDRESS", value=False, key=None) 
+            if IP_ADDRESS:
+                entityList = entityList+"IP_ADDRESS"+","
+            ADDRESS = st.checkbox("ADDRESS", value=False, key=None) 
+            if ADDRESS:
+                entityList = entityList+"ADDRESS"+","
+            NAME = st.checkbox("NAME", value=False, key=None) 
+            if NAME:
+                entityList = entityList+"NAME"+","
+            CREDIT_DEBIT_EXPIRY = st.checkbox("CREDIT_DEBIT_EXPIRY", value=False, key=None) 
+            if CREDIT_DEBIT_EXPIRY:
+                entityList = entityList+"CREDIT_DEBIT_EXPIRY"+","
+            SSN = st.checkbox("SSN", value=False, key=None)
+            if SSN:
+                entityList = entityList+"SSN"+","
+            PHONE = st.checkbox("PHONE", value=False, key=None) 
+            if PHONE:
+                entityList = entityList+"PHONE"+","
+            DATE_TIME = st.checkbox("DATE_TIME", value=False, key=None) 
+            if DATE_TIME:
+                entityList = entityList+"DATE_TIME"+","
+            PIN = st.checkbox("PIN", value=False, key=None) 
+            if PIN:
+                entityList = entityList+"PIN"+","
+            PASSPORT_NUMBER = st.checkbox("PASSPORT_NUMBER", value=False, key=None) 
+            if PASSPORT_NUMBER:
+                entityList = entityList+"PASSPORT_NUMBER"+","
+            URL = st.checkbox("URL", value=False, key=None) 
+            if URL:
+                entityList = entityList+"URL"+","
+            USERNAME = st.checkbox("USERNAME", value=False, key=None) 
+            if USERNAME:
+                entityList = entityList+"USERNAME"+","
+            PASSWORD = st.checkbox("PASSWORD", value=False, key=None) 
+            if PASSWORD:
+                entityList = entityList+"PASSWORD"+","
+            EMAIL = st.checkbox("EMAIL", value=False, key=None) 
+            if EMAIL:
+                entityList = entityList+"EMAIL"+","
+            AWS_SECRET_KEY = st.checkbox("AWS_SECRET_KEY", value=False, key=None) 
+            if AWS_SECRET_KEY:
+                entityList = entityList+"AWS_SECRET_KEY"+","
+            BANK_ACCOUNT_NUMBER = st.checkbox("BANK_ACCOUNT_NUMBER", value=False, key=None) 
+            if BANK_ACCOUNT_NUMBER:
+                entityList = entityList+"BANK_ACCOUNT_NUMBER"+","
+            AGE = st.checkbox("AGE", value=False, key=None) 
+            if AGE:
+                entityList = entityList+"AGE"
+            entityList = entityList.replace(',','","')
+            entityList = '"'+entityList+'"'
+            entityList = entityList.replace(',""','')
+            print(entityList)
+            #entityList = #st.text_input("Entity List") #gonnaappendu
+        #st.info('Please input the Entity List as : ALL or like this > "CREDIT_DEBIT_NUMBER","BANK_ROUTING","MAC_ADDRESS","AWS_ACCESS_KEY","CREDIT_DEBIT_CVV","NAME","CREDIT_DEBIT_EXPIRY","SSN","PHONE","URL","AWS_SECRET_KEY","DRIVER_ID","ADDRESS","PIN","USERNAME","PASSPORT_NUMBER","PASSWORD","IP_ADDRESS","EMAIL","DATE_TIME","BANK_ACCOUNT_NUMBER","AGE"')
         st.info('Please input the Mask Character select :  ! or # or $ or % or & or * or @  ')
         maskCharacter = st.text_input("Mask Character")
         st.subheader('_Please click the button to Mask Entities_')
         if st.button('Masking'):
-            response = requests.get(f"http://127.0.0.1:8000/maskEntities?verified={authValue}&fileName={fileName}&maskCharacter={maskCharacter}")
+            response = requests.get(f"http://127.0.0.1:8000/maskEntities?verified={authValue}&fileName={fileName}&entityList={entityList}&maskCharacter={maskCharacter}")
             data_list = response.json()
             jobID = data_list
             st.header(data_list)
@@ -140,9 +224,91 @@ if chosenRadioButton == 'Anonymize':
         st.header('Replace with EntityType')
         st.info('Please enter Input File Name for Anonymization Job')
         fileName = st.text_input("File Name")
+        entityList = ""
+        drop = st.selectbox('Please select Entities for Anonymization',('ALL', 'Select'))
+        st.write('You selected:', drop)
+        entityList = ""
+        if drop == 'ALL':
+            ALL = st.checkbox("ALL", value=False, key=None) #use ur brain bro make this a drop
+            if ALL:
+                entityList = "ALL"
+                entityList = '"'+entityList+'"'
+        else:
+            st.info('Please select the Entity List for Masking') #use this info for the drop and select option
+            # rest in the drop select
+            CREDIT_DEBIT_NUMBER = st.checkbox("CREDIT_DEBIT_NUMBER", value=False, key=None)
+            if CREDIT_DEBIT_NUMBER:
+                entityList = entityList+"CREDIT_DEBIT_NUMBER"+","
+            AWS_ACCESS_KEY = st.checkbox("AWS_ACCESS_KEY", value=False, key=None) 
+            if AWS_ACCESS_KEY:
+                entityList = entityList+"AWS_ACCESS_KEY"+","
+            BANK_ROUTING = st.checkbox("BANK_ROUTING", value=False, key=None) 
+            if BANK_ROUTING:
+                entityList = entityList+"BANK_ROUTING"+","
+            MAC_ADDRESS = st.checkbox("MAC_ADDRESS", value=False, key=None) 
+            if MAC_ADDRESS:
+                entityList = entityList+"MAC_ADDRESS"+","
+            DRIVER_ID = st.checkbox("DRIVER_ID", value=False, key=None) 
+            if DRIVER_ID:
+                entityList = entityList+"DRIVER_ID"+","
+            CREDIT_DEBIT_CVV = st.checkbox("CREDIT_DEBIT_CVV", value=False, key=None) 
+            if CREDIT_DEBIT_CVV:
+                entityList = entityList+"CREDIT_DEBIT_CVV"+","
+            IP_ADDRESS = st.checkbox("IP_ADDRESS", value=False, key=None) 
+            if IP_ADDRESS:
+                entityList = entityList+"IP_ADDRESS"+","
+            ADDRESS = st.checkbox("ADDRESS", value=False, key=None) 
+            if ADDRESS:
+                entityList = entityList+"ADDRESS"+","
+            NAME = st.checkbox("NAME", value=False, key=None) 
+            if NAME:
+                entityList = entityList+"NAME"+","
+            CREDIT_DEBIT_EXPIRY = st.checkbox("CREDIT_DEBIT_EXPIRY", value=False, key=None) 
+            if CREDIT_DEBIT_EXPIRY:
+                entityList = entityList+"CREDIT_DEBIT_EXPIRY"+","
+            SSN = st.checkbox("SSN", value=False, key=None)
+            if SSN:
+                entityList = entityList+"SSN"+","
+            PHONE = st.checkbox("PHONE", value=False, key=None) 
+            if PHONE:
+                entityList = entityList+"PHONE"+","
+            DATE_TIME = st.checkbox("DATE_TIME", value=False, key=None) 
+            if DATE_TIME:
+                entityList = entityList+"DATE_TIME"+","
+            PIN = st.checkbox("PIN", value=False, key=None) 
+            if PIN:
+                entityList = entityList+"PIN"+","
+            PASSPORT_NUMBER = st.checkbox("PASSPORT_NUMBER", value=False, key=None) 
+            if PASSPORT_NUMBER:
+                entityList = entityList+"PASSPORT_NUMBER"+","
+            URL = st.checkbox("URL", value=False, key=None) 
+            if URL:
+                entityList = entityList+"URL"+","
+            USERNAME = st.checkbox("USERNAME", value=False, key=None) 
+            if USERNAME:
+                entityList = entityList+"USERNAME"+","
+            PASSWORD = st.checkbox("PASSWORD", value=False, key=None) 
+            if PASSWORD:
+                entityList = entityList+"PASSWORD"+","
+            EMAIL = st.checkbox("EMAIL", value=False, key=None) 
+            if EMAIL:
+                entityList = entityList+"EMAIL"+","
+            AWS_SECRET_KEY = st.checkbox("AWS_SECRET_KEY", value=False, key=None) 
+            if AWS_SECRET_KEY:
+                entityList = entityList+"AWS_SECRET_KEY"+","
+            BANK_ACCOUNT_NUMBER = st.checkbox("BANK_ACCOUNT_NUMBER", value=False, key=None) 
+            if BANK_ACCOUNT_NUMBER:
+                entityList = entityList+"BANK_ACCOUNT_NUMBER"+","
+            AGE = st.checkbox("AGE", value=False, key=None) 
+            if AGE:
+                entityList = entityList+"AGE"
+            entityList = entityList.replace(',','","')
+            entityList = '"'+entityList+'"'
+            entityList = entityList.replace(',""','')
+            print(entityList)
         st.subheader('_Please click the button to Replace with EntityType_')
         if st.button('Replace with EntityType'):
-            response = requests.get(f"http://127.0.0.1:8000/replaceEntities?verified={authValue}&fileName={fileName}&maskCharacter={maskCharacter}")
+            response = requests.get(f"http://127.0.0.1:8000/replaceEntities?verified={authValue}&fileName={fileName}&entityList={entityList}")
             data_list = response.json()
             jobID = data_list
             st.header(data_list)

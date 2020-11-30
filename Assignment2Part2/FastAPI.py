@@ -10,14 +10,14 @@ from boto.s3.connection import S3Connection
 from fastapi.security.api_key import APIKeyQuery, APIKeyCookie, APIKeyHeader, APIKey
 from fastapi.openapi.docs import get_swagger_ui_html
 from fastapi.openapi.utils import get_openapi
-from recommendAPI import recommend_user_user, recommend_item_item, recommend_similar_user_item
+#from recommendAPI import recommend_user_user, recommend_item_item, recommend_similar_user_item
 from mangum import Mangum
 from fastapi_cloudauth.cognito import Cognito, CognitoCurrentUser, CognitoClaims
 from urllib.parse import urlparse,urlsplit
 from boto3.dynamodb.conditions import Key
 #from botocore.vendored import requests
 #Def Vars
-app = FastAPI(root_path="/prod")
+app = FastAPI()
 fileName = "" 
 #Def AWS Config
 userRegion = "us-east-1"
@@ -172,7 +172,7 @@ def identifyPIIEntity(verified: bool, fileName: str):
         return result
 # API 5
 @app.get("/maskEntities", tags=["Anonymize Entities"])
-def maskEntities(verified: bool, fileName:str, maskCharacter):
+def maskEntities(verified: bool, fileName:str, entityList: str, maskCharacter):
     if(verified == True):
         comprehend = boto3.client(service_name='comprehend', region_name='us-east-1')
         inputBucket = f"s3://scrapecalldata/{fileName}.txt"
@@ -187,7 +187,7 @@ def maskEntities(verified: bool, fileName:str, maskCharacter):
         Mode='ONLY_REDACTION',
         RedactionConfig={
             'PiiEntityTypes': [
-                'ALL'
+                entityList
             ],
             'MaskMode': 'MASK',
             'MaskCharacter': maskCharacter
@@ -242,7 +242,7 @@ def getMaskedEntities(verified: bool, jobID: str, fileName: str):
         return result
 # API 7
 @app.get("/replaceEntities", tags=["Anonymize Entities"])
-def replaceEntities(verified: bool, fileName:str, maskCharacter):
+def replaceEntities(verified: bool, fileName: str, entityList: str):
     if(verified == True):
         comprehend = boto3.client(service_name='comprehend', region_name='us-east-1')
         inputBucket = f"s3://scrapecalldata/{fileName}.txt"
@@ -257,7 +257,7 @@ def replaceEntities(verified: bool, fileName:str, maskCharacter):
         Mode='ONLY_REDACTION',
         RedactionConfig={
             'PiiEntityTypes': [
-                'ALL'
+                entityList
             ],
             'MaskMode': 'REPLACE_WITH_PII_ENTITY_TYPE',
         },
