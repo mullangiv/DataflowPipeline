@@ -2,7 +2,7 @@
 # Assignment 2(Part 2)
 Developed a data pipeline to accomplish  productionizing the pipeline and the goal is to create application to make data available using API's like web scraping, identifying entities, anonymization, deanonymization.
 # Report
-
+https://codelabs-preview.appspot.com/?file_id=1lgBEnJtGuoyHnf9W3M1TcwpjjHxPjP_ma6DeJ2l0Ka4#3
 
 # Requirements-
 Python 3.6+
