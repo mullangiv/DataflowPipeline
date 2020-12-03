@@ -128,7 +128,7 @@ if chosenRadioButton == 'Anonymize':
             ALL = st.checkbox("ALL", value=False, key=None) #use ur brain bro make this a drop
             if ALL:
                 entityList = "ALL"
-                entityList = '"'+entityList+'"'
+               # entityList = '"'+entityList+'"'
         else:
             st.info('Please select the Entity List for Masking') #use this info for the drop and select option
             # rest in the drop select
