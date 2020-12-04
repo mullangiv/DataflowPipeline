@@ -1,17 +1,11 @@
 
 # Team 6
  
-Name: Hardik Thakkar
+Name: Hardik Thakkar(NUID : 11306605)
 
-NUID : 11306605 
+Name: Rugved Gole(NUID : 001306940)
 
-Name: Rugved Gole
-
-NUID : 001306940 
-
-Name: Vinod Kumar Mullangi
-
-NUID : 001057553
+Name: Vinod Kumar Mullangi(NUID : 001057553)
 
 
 
