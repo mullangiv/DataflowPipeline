@@ -62,7 +62,7 @@ async def scrapeCallTranscripts(verified: bool, url: str, page: int):
             text = content.text
             text = text[:20000]
             #AWS
-            outbucket = 'scrapecalldata'
+            outbucket = 'scrapecalldata1'
             s3 = boto3.resource('s3')
             outfile = io.StringIO(text)
             # Generate output file and close it!

@@ -11,9 +11,9 @@ from fastapi.openapi.utils import get_openapi
 from starlette.status import HTTP_403_FORBIDDEN
 from starlette.responses import RedirectResponse, JSONResponse
 
-s3 = boto3.resource(service_name='s3', region_name='us-east-1')
-data = open('plantdata.csv', 'rb')
-s3.Bucket('s3overwritebucketplantdata').put_object(Key='plantdata.csv', Body=data)
+s3 = boto3.resource(service_name='s3', region_name='us-east-2')
+data = open('plantdata1.csv', 'rb')
+s3.Bucket('s3overwritebucketplantdata1').put_object(Key='plantdata1.csv', Body=data)
 
 
 API_KEY = str(uuid.uuid1()) 
