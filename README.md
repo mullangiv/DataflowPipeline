@@ -26,4 +26,7 @@ API 2: Named entity recognition
 API 3: Implement masking, and anonymization functions
 
 API 4: Deanonymization
-#
+
+# Assignment 3
+
+Sentiment Analysis
