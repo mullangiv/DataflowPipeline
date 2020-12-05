@@ -13,6 +13,38 @@ Name: Vinod Kumar Mullangi(NUID : 001057553)
 
 https://codelabs-preview.appspot.com/?file_id=1qB5D2lpuaEuyxuWjZk7Ziqv4ugTMSj9IBGMoLzia5vM#3
 
+# Requirements-
+Python 3.6+
+
+pip install starlette
+
+pip install uvicorn
+
+pip install pydantic
+
+pip install fastapi
+
+pip install streamlit
+
+pip install numpy
+
+pip install pandas
+
+pip install time
+
+pip install json
+
+pip install requests
+
+
+# Steps to run this project
+Run below command in command prompt
+
+streamlit run StreamLitApp.py
+
+uvicorn FastAPI:app --reload
+
+
 
 
 
