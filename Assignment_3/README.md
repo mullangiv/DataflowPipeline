@@ -1,51 +1,66 @@
+# Deploy BERT for Sentiment Analsysi with FastAPI
 
-# Team 6
- 
-Name: Hardik Thakkar(NUID : 11306605)
+Deploy a pre-trained BERT model for Sentiment Analysis as a REST API using FastAPI
 
-Name: Rugved Gole(NUID : 001306940)
+## Demo
 
-Name: Vinod Kumar Mullangi(NUID : 001057553)
+The model is trained to classify sentiment (negative, neutral, and positive) on a custom dataset from app reviews on Google Play. Here's a sample request to the API:
 
-# Assignment3(Sentiment Analysis)
+```bash
+http POST http://127.0.0.1:8000/predict text="Good basic lists, i would like to create more lists, but the annual fee for unlimited lists is too out there"
+```
 
-# Report
+The response you'll get looks something like this:
 
-https://codelabs-preview.appspot.com/?file_id=1qB5D2lpuaEuyxuWjZk7Ziqv4ugTMSj9IBGMoLzia5vM#3
+```js
+{
+    "confidence": 0.9999083280563354,
+    "probabilities": {
+        "negative": 3.563107020454481e-05,
+        "neutral": 0.9999083280563354,
+        "positive": 5.596495248028077e-05
+    },
+    "sentiment": "neutral"
+}
+```
 
-# Requirements-
-Python 3.6+
+You can also [read the complete tutorial here](https://www.curiousily.com/posts/deploy-bert-for-sentiment-analysis-as-rest-api-using-pytorch-transformers-by-hugging-face-and-fastapi/)
 
-pip install starlette
+## Installation
 
-pip install uvicorn
+Clone this repo:
 
-pip install pydantic
+```sh
+git clone git@github.com:curiousily/Deploy-BERT-for-Sentiment-Analysis-with-FastAPI.git
+cd Deploy-BERT-for-Sentiment-Analysis-with-FastAPI
+```
 
-pip install fastapi
+Install the dependencies:
 
-pip install streamlit
+```sh
+pipenv install --dev
+```
 
-pip install numpy
+Download the pre-trained model:
 
-pip install pandas
+```sh
+bin/download_model
+```
 
-pip install time
+## Test the setup
 
-pip install json
+Start the HTTP server:
 
-pip install requests
+```sh
+bin/start_server
+```
 
+Send a test request:
 
-# Steps to run this project
-Run below command in command prompt
+```sh
+bin/test_request
+```
 
-streamlit run StreamLitApp.py
+## License
 
-uvicorn FastAPI:app --reload
-
-
-
-
-
-
+MIT
