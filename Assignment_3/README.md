@@ -3,7 +3,6 @@
 Deploy a pre-trained BERT model for Sentiment Analysis as a REST API using FastAPI
 
 ## Demo
-
 The model is trained to classify sentiment (negative, neutral, and positive) on a custom dataset from app reviews on Google Play. Here's a sample request to the API:
 
 ```bash
@@ -28,12 +27,7 @@ You can also [read the complete tutorial here](https://www.curiousily.com/posts/
 
 ## Installation
 
-Clone this repo:
-
-```sh
-git clone git@github.com:curiousily/Deploy-BERT-for-Sentiment-Analysis-with-FastAPI.git
-cd Deploy-BERT-for-Sentiment-Analysis-with-FastAPI
-```
+Clone this repo
 
 Install the dependencies:
 
@@ -42,23 +36,10 @@ pipenv install --dev
 ```
 
 Download the pre-trained model:
+https://drive.google.com/uc?id=1V8itWtowCYnb2Bc9KlK9SxGff9WwmogA
 
 ```sh
 bin/download_model
-```
-
-## Test the setup
-
-Start the HTTP server:
-
-```sh
-bin/start_server
-```
-
-Send a test request:
-
-```sh
-bin/test_request
 ```
 
 ## License
