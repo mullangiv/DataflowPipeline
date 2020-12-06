@@ -39,9 +39,16 @@ Download the pre-trained model:
 https://drive.google.com/uc?id=1V8itWtowCYnb2Bc9KlK9SxGff9WwmogA
 
 ```sh
-bin/download_model
+save this model in assets folder in the same directory as sentiment_analyzer
 ```
-
+##Docker
+Use the Dockerfile_HT to dockerize it please make sure before you run the docker you have it tested on local as FastAPI
+```sh
+docker create -t ImageName . 
+```
+```sh
+docker run -i --name ContainerName -p 8000:8000 ImageName
+```
 ## License
 
 MIT
