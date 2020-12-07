@@ -1,4 +1,4 @@
-# Tensforlow 2 official image with Python 3.6 as base
+# Pytortch official image with Python 3.6 as base
 FROM pytorch/pytorch:1.7.0-cuda11.0-cudnn8-runtime
 
 # Maintainer info
