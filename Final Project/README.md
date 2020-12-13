@@ -5,6 +5,7 @@ Please refer the article to understand how the selenium driver is handled on aws
 Read full article by author [vittorionardone: chromium-and-selenium-in-aws-lambda](https://www.vittorionardone.it/en/2020/06/04/chromium-and-selenium-in-aws-lambda)
 ## SAM Deploy
 Run these commands in sequence:
+
 `make lambda-layer-build` to prepare archive for AWS Lambda Layer deploy (layer.zip)
 
 `make lambda-function-build` to prepare archive for AWS Lambda deploy (deploy.zip)
