@@ -17,6 +17,6 @@ update lambda handler to `src/main.handler`
 
 ## Credits
 Inspired by : [selenium-chromium-lambda](https://github.com/vittorio-nardone/selenium-chromium-lambda),
-And : [pychromeless](https://github.com/21Buttons/pychromeless)
-And : [authentikos](https://github.com/srinjoychakravarty/authentikos)
+[pychromeless](https://github.com/21Buttons/pychromeless),
+And [authentikos](https://github.com/srinjoychakravarty/authentikos)
 
