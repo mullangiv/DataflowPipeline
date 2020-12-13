@@ -1,7 +1,7 @@
 
 # Team 6
  
-Name: Hardik Thakkar(NUID : 11306605)
+Name: Hardik Thakkar(NUID : 001306605)
 
 Name: Rugved Gole(NUID : 001306940)
 
