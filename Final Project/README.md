@@ -6,7 +6,9 @@ Read full article by author [vittorionardone: chromium-and-selenium-in-aws-lambd
 ## SAM Deploy
 Run these commands in sequence:
 `make lambda-layer-build` to prepare archive for AWS Lambda Layer deploy (layer.zip)
+
 `make lambda-function-build` to prepare archive for AWS Lambda deploy (deploy.zip)
+
 `make BUCKET=<your_bucket_name> create-stack` to create CloudFormation stack (lambda function, layer and IAM role)
 
 ## Lambda Update
