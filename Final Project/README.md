@@ -16,7 +16,7 @@ update your lambda and add remaining dependancies as layers if any:
 update lambda handler to `src/main.handler`
 
 ## Credits
-Inspired by : [this awesome project](https://github.com/vittorio-nardone/selenium-chromium-lambda)
-Inspired by : [this awesome project](https://github.com/21Buttons/pychromeless)
-Inspired by : [this awesome project](https://github.com/srinjoychakravarty/authentikos)
+Inspired by : [selenium-chromium-lambda](https://github.com/vittorio-nardone/selenium-chromium-lambda),
+And : [pychromeless](https://github.com/21Buttons/pychromeless)
+And : [authentikos](https://github.com/srinjoychakravarty/authentikos)
 
