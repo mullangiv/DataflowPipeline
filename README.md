@@ -15,29 +15,23 @@ Name: Vinod Kumar Mullangi(NUID : 001057553)
 
 Developed a data pipeline to accomplish data as a service and the goal is to create FastAPI application to make data available using API
 
-# Assignmemt 2
+# Assignment 2
 
 Implemented the Productionizing the pipeline using API's.
 
-API 1: Scraping
+API 1: Web Scraping
 
 API 2: Named entity recognition
 
-API 3: Implement masking, and anonymization functions
+API 3: Implement anonymization masking, and replace with entity functions
 
-API 4: Deanonymization
+API 4: de-identification and re-identification
 
 # Assignment 3
 
 Implemented the sentiment analysis using API's.
 
-API 1: Scraping
-
-API 2: Named entity recognition
-
-API 3: Implement masking, and anonymization functions
-
-API 4: Deanonymization
+Extended Assignment 2
 
 API 5: Sentiment Analysis
 
