@@ -2,9 +2,7 @@
 
 How to run automated (Selenium) Headless Chromium in AWS Lambda.
 Please refer the article to understand how the selenium driver is handled on aws lambda:-
-Read full article [https://www.vittorionardone.it/en/2020/06/04/chromium-and-selenium-in-aws-lambda](https://www.vittorionardone.it/en/2020/06/04/chromium-and-selenium-in-aws-lambda)
-authors git : https://github.com/vittorio-nardone/selenium-chromium-lambda
-
+Read full article by author [vittorionardone: chromium-and-selenium-in-aws-lambda](https://www.vittorionardone.it/en/2020/06/04/chromium-and-selenium-in-aws-lambda)
 ## SAM Deploy
 Run these commands in sequence:
 `make lambda-layer-build` to prepare archive for AWS Lambda Layer deploy (layer.zip)
