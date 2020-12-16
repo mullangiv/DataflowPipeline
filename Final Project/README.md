@@ -35,45 +35,25 @@ https://stock-prediction-analysis.herokuapp.com/
 ## Project Structure
 Project
 ├──README.md
-
 ├── Config file
-
 ├── Company Keywords
-
 │   └── keywords to categorize the articles
-
 ├── Data: Scripts to scrape the data and api to get stock data
-
 │   └── StockAPI_Alphavantage.py
-
 │   └── WSJScrapper_Headline.py
-
 │   └── WSJScrapper_Content.py
-
 │   └── sentiment_analysis.py
-
 │   └── test_data.csv
-
 ├── Dockerfile: instruction for docker image construction.
-
 ├── requirements.txt: dependencies.
-
 ├── GlueScripts: Scripts for AWS Gule
-
 │   └── Pyspark scripts for each pipeline
-
 ├── webapp: code for flask webapp
-
 │   └── templates: html and css templates for web app
-
 │   └── app.py
-
 │   └── Procfile
-
 │   └── runtime.txt
-
 │   └── License
-
 ├── Readme.MD
 ## Getting Started
 ## Prerequisites
@@ -120,13 +100,9 @@ Create a Procfile. It is a text file in the root directory of the application th
 We need to create a GitHub repository with app.py and these essential files along with.gitignore(Although it is not necessary it is recommended to include it)
 Now our Flask app folder contains the this file structure
  ├── .gitignore
- 
  ├── Procfile
- 
  ├── app.py
- 
  ├── requirements.txt
- 
  │── runtime.txt
 Go on Heroku website and after logging in click on New → Create New App. Enter ”App name” and select the region and click on Create App and in the Deploy tab, select GitHub in Deployment method then Select the repository name and click Connect
 Select Enable Automatic Deploys so that whenever we push changes to our GitHub it reflects on our app and Click Deploy Branch which will deploy the current state of the branch. If everything is successful it shows an Open App button. We can now open the app deployed on Heroku
