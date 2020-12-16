@@ -35,33 +35,19 @@ https://codelabs-preview.appspot.com/?file_id=1RbHApJS1RWtCxlATIAjOV2adBGAz5flxd
 
 Project
 ├── README.md
-
 ├── Config file
-
 ├── Data: Scripts to scrape the data and api to get stock data
-
 │   └── Newsarticle.py
-
 │   └── Twitter.py
-
 │   └── sample_news_data.csv
-
 │   └── sample_twitter_data.csv
-
 ├── requirements.txt: dependencies.
-
 ├── Fakenews
-
 │   └── Fakenews.py
-
 ├── webapp: code for Streamlit and fastapi
-
 │   └── streamlitapp.py
-
 │   └── fastapiapp.py
-
 │   └── License
-
 ├── Readme.MD
 
 ## Steps to run the application:
