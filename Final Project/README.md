@@ -37,10 +37,10 @@ Project
 ├── README.md
 ├── Config file
 ├── Data: Scripts to scrape the data and api to get stock data
-    └── Newsarticle.py
-    └── Twitter.py
-    └── sample_news_data.csv
-    └── sample_twitter_data.csv
+│   └── Newsarticle.py
+│   └── Twitter.py
+│   └── sample_news_data.csv
+│   └── sample_twitter_data.csv
 ├── requirements.txt: dependencies.
 ├── Fakenews
 │   └── Fakenews.py
