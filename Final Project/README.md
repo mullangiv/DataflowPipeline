@@ -31,8 +31,11 @@ Project
 ## Getting Started
 ## Prerequisites
 Python3.5+
+
 FastAPI
+
 AWS
+
 Streamlit
 ## Configuring the AWS CLI
 You need to retrieve AWS credentials that allow your AWS CLI to access AWS resources.
@@ -53,6 +56,9 @@ Get AWS Key and create a config file
 
 ## Steps to get the Data
 git clone the repo https://github.com/HardikThakkar94/DataflowPipeline/tree/main/Final%20Project
+
+Newsarticle.py
+Twitter.py
 
 In "Data" folder we have file to run the api and the Scrapper function. 
 
