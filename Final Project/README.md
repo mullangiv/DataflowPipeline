@@ -66,6 +66,7 @@ This will get us the data in S3 bucket.
 
 Now, We will have a Data in S3 bucket. Now use the AWS Lambda to extract data from S3 buckets, transform it and load it into the Dynamodb.
 ## Sentiment Analysis using Aws Comprehend:
+In this repo we have python script for sentiment_analaysis we need to run that in order to get sentiment score of the scrapped data and stored in dynamodb
 
 
 ## Fake News Detection(λ selenium-chromium-lambda)
@@ -96,18 +97,19 @@ Inspired by : [selenium-chromium-lambda](https://github.com/vittorio-nardone/sel
 
 And [authentikos](https://github.com/srinjoychakravarty/authentikos)
 
+
 ## Testing:
-Streamlit : 
+Streamlit : streamlit run StreamLitApp.py
 
-FastAPI : 
+FastAPI : uvicorn FastAPI:app --reload
 
-## Deploying the Streamlit on AWS:
+ 
 
 ## Steps to run the application:
 
 Application is deployed on AWS.
 
-Application Link :
+## Deploying the Streamlit on AWS:
 
 ## API 1:- Scraping(News Articles)
 
@@ -126,7 +128,7 @@ Go to Scrapping page -> Press “Scrape” button
 
 ## API 4:- Sentiment Analysis
 
-Scrapped data from twitter will be input to the Sentiment Analysis algorithm which give the sentiments scores.
+Scrapped tweets data from twitter will be input to the Sentiment Analysis algorithm which gives the sentiments scores.
 
 ## API 5:- Analytics
 
