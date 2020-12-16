@@ -1,5 +1,6 @@
 ## Project
 Fake News Detection and Sentiment Analysis Data Pipeline
+
 ## Project Proposal:
 
 https://codelabs-preview.appspot.com/?file_id=1WZF0_4p3RpdacD9EQpeUyugntsY1PdG8-ErJOKMZ950#0
@@ -35,17 +36,28 @@ AWS
 Streamlit
 ## Configuring the AWS CLI
 You need to retrieve AWS credentials that allow your AWS CLI to access AWS resources.
-Sign into the AWS console. This simply requires that you sign in with the email and password you used to create your account. If you already have an AWS account, be sure to log in as the root user.
+
+Sign into the AWS console. This simply requires that you sign in with the email and password you used to create your account. If you already have an AWS account, be sure to log 
+
+in as the root user.
+
 Choose your account name in the navigation bar at the top right, and then choose My Security Credentials.
+
 Expand the Access keys (access key ID and secret access key) section.
+
 Press Create New Access Key.
+
 Press Download Key File to download a CSV file that contains your new AccessKeyId and SecretKey. Keep this file somewhere where you can find it easily
+
 Get AWS Key and create a config file
 
 ## Steps to get the Data
 git clone the repo https://github.com/HardikThakkar94/DataflowPipeline/tree/main/Final%20Project
+
 In "Data" folder we have file to run the api and the Scrapper function. 
+
 This will get us the data in S3 bucket.
+
 Now, We will have a Data in S3 bucket. Now use the AWS Lambda to extract data from S3 buckets, transform it and load it into the Dynamodb.
 ## Sentiment Analysis using Aws Comprehend:
 
@@ -53,7 +65,9 @@ Now, We will have a Data in S3 bucket. Now use the AWS Lambda to extract data fr
 ## Fake News Detection(λ selenium-chromium-lambda)
 
 How to run automated (Selenium) Headless Chromium in AWS Lambda.
+
 Please refer the article to understand how the selenium driver is handled on aws lambda:-
+
 Read full article by author [vittorionardone: chromium-and-selenium-in-aws-lambda](https://www.vittorionardone.it/en/2020/06/04/chromium-and-selenium-in-aws-lambda)
 ## SAM Deploy
 Run these commands in sequence:
@@ -66,15 +80,19 @@ Run these commands in sequence:
 
 ## Lambda Update
 update your lambda and add remaining dependancies as layers if any:
+
 update lambda handler to `src/main.handler`
 
 ## Credits
 Inspired by : [selenium-chromium-lambda](https://github.com/vittorio-nardone/selenium-chromium-lambda),
+
 [pychromeless](https://github.com/21Buttons/pychromeless),
+
 And [authentikos](https://github.com/srinjoychakravarty/authentikos)
 
 ## Testing:
 Streamlit : 
+
 FastAPI : 
 
 ## Deploying the Streamlit on AWS:
@@ -82,6 +100,7 @@ FastAPI :
 ## Steps to run the application:
 
 Application is deployed on AWS.
+
 Application Link :
 
 ## API 1:- Scraping(News Articles)
@@ -108,16 +127,6 @@ Scrapped data from twitter will be input to the Sentiment Analysis algorithm whi
 1. If article is fake, how the twitter users sentiments are. Finding how the fake news is spreading among users.
 
 
-
-
-
-## Getting Started
-Prerequisites
-Python3.5+
-Docker
-FastAPI
-AWS
-Streamlit
 
 
 ## Authors
