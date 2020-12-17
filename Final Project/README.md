@@ -13,6 +13,7 @@ https://codelabs-preview.appspot.com/?file_id=1RbHApJS1RWtCxlATIAjOV2adBGAz5flxd
 
 Project 
 ├── README.md 
+|
 ├── Config file 
 ├── Data: Scripts to scrape the data and api to get stock data 
 │ └── Newsarticle.py 
