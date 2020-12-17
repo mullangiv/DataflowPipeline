@@ -49,6 +49,7 @@ app = FastAPI(docs_url=None, redoc_url=None, openapi_url=None)
 userRegion = "us-east-2"
 userClientId = "5cij5puadvuc6c52uivr3fiid7" #ur info
 userPool = "us-east-2_DUsINHH06"
+
 auth = Cognito(region= userRegion, userPoolId= userPool)
 getUser = CognitoCurrentUser(region= userRegion, userPoolId= userPool)
 cidp = boto3.client('cognito-idp')
