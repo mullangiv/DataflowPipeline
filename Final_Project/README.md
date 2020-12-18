@@ -9,39 +9,6 @@ https://codelabs-preview.appspot.com/?file_id=1WZF0_4p3RpdacD9EQpeUyugntsY1PdG8-
 
 https://codelabs-preview.appspot.com/?file_id=1RbHApJS1RWtCxlATIAjOV2adBGAz5flxdJdZFLeR14s#0
 
-## Project Structure
-
-Project 
-
-├── README.md 
-
-├── Config file 
-
-├── Data: Scripts to scrape the data and api to get stock data 
-
-│ └── Newsarticle.py 
-
-│ └── Twitter.py 
-
-│ └── sample_news_data.csv 
-
-│ └── sample_twitter_data.csv 
-
-├── requirements.txt: dependencies 
-
-├── Fakenews 
-
-│ └── Fakenews.py 
-
-├── webapp: code for Streamlit and fastapi 
-
-│ └── streamlitapp.py 
-
-│ └── fastapiapp.py 
-
-│ └── License 
-
-├── Readme.MD
 
 ## Getting Started
 Git Clone this repo.
@@ -69,6 +36,7 @@ FastAPI
 AWS
 
 Streamlit
+
 ## Configuring the AWS CLI
 You need to retrieve AWS credentials that allow your AWS CLI to access AWS resources.
 
@@ -86,17 +54,7 @@ Press Download Key File to download a CSV file that contains your new AccessKeyI
 
 Get AWS Key and create a config file
 
-## Steps to get the Data
-git clone the repo https://github.com/HardikThakkar94/DataflowPipeline/tree/main/Final%20Project
 
-Newsarticle.py
-Twitter.py
-
-In "Data" folder we have file to run the api and the Scrapper function. 
-
-This will get us the data in S3 bucket.
-
-Now, We will have a Data in S3 bucket. Now use the AWS Lambda to extract data from S3 buckets, transform it and load it into the Dynamodb.
 ## Sentiment Analysis using Aws Comprehend:
 In this repo we have python script for sentiment_analaysis we need to run that in order to get sentiment score of the scrapped data and stored in dynamodb
 
@@ -130,16 +88,17 @@ Inspired by : [selenium-chromium-lambda](https://github.com/vittorio-nardone/sel
 And [authentikos](https://github.com/srinjoychakravarty/authentikos)
 
 
-## Testing:
+## Steps to run the application:
+
+Application is deployed on AWS.
+
 Streamlit : streamlit run StreamLitApp.py
 
 FastAPI : uvicorn FastAPI:app --reload
 
 [![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://share.streamlit.io/hardikthakkar94/streamlit/main/)
 
-## Steps to run the application:
 
-Application is deployed on AWS.
 
 ## Deploying the Streamlit on AWS:
 
@@ -183,3 +142,5 @@ Rugved Gole
 
 Vinod Kumar Mullangi
 
+## License
+This project is licensed under the MIT License - see the LICENSE.md file for details
