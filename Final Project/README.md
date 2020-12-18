@@ -135,6 +135,9 @@ Streamlit : streamlit run StreamLitApp.py
 
 FastAPI : uvicorn FastAPI:app --reload
 
+```markdown
+[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://share.streamlit.io/hardikthakkar94/streamlit/main/)
+```
 
 ## Steps to run the application:
 
