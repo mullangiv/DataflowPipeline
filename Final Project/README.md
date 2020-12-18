@@ -29,7 +29,12 @@ Project
 ├── Readme.MD
 
 ## Getting Started
-
+Git Clone this repo.
+Create an AWS Account and Make an IAM User with Admin acces
+Make Lambdas using Lambda and Fast API Folder with Script | GUI | CLI
+Make Dyanmo DB using Script | CLI | GUI
+Make S3 using Script | CLI | GUI
+Create API Gateways for your Apis
 ## Prerequisites
 Python3.5+
 
