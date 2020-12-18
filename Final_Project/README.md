@@ -92,9 +92,7 @@ And [authentikos](https://github.com/srinjoychakravarty/authentikos)
 
 Application is deployed on AWS.
 
-Streamlit : streamlit run StreamLitApp.py
-
-FastAPI : uvicorn FastAPI:app --reload
+Streamlit:
 
 [![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://share.streamlit.io/hardikthakkar94/streamlit/main/)
 
