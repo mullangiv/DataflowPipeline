@@ -135,13 +135,20 @@ Streamlit : streamlit run StreamLitApp.py
 
 FastAPI : uvicorn FastAPI:app --reload
 
- 
 
 ## Steps to run the application:
 
 Application is deployed on AWS.
 
 ## Deploying the Streamlit on AWS:
+
+Spin up an EC2 instance.
+
+Use Git Hub to clone the project on EC2
+
+Install dependancies using requirements.txt
+
+Run the commands.
 
 ## API 1:- Scraping(News Articles)
 
@@ -165,7 +172,6 @@ Scrapped tweets data from twitter will be input to the Sentiment Analysis algori
 ## API 5:- Analytics
 
 1. If article is fake, how the twitter users sentiments are. Finding how the fake news is spreading among users.
-
 
 
 
