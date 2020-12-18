@@ -13,28 +13,53 @@ https://codelabs-preview.appspot.com/?file_id=1RbHApJS1RWtCxlATIAjOV2adBGAz5flxd
 
 Project 
 ├── README.md 
+
 ├── Config file 
+
 ├── Data: Scripts to scrape the data and api to get stock data 
+
 │ └── Newsarticle.py 
+
 │ └── Twitter.py 
+
 │ └── sample_news_data.csv 
+
 │ └── sample_twitter_data.csv 
+
 ├── requirements.txt: dependencies 
+
 ├── Fakenews 
+
 │ └── Fakenews.py 
+
 ├── webapp: code for Streamlit and fastapi 
+
 │ └── streamlitapp.py 
+
 │ └── fastapiapp.py 
+
 │ └── License 
+
 ├── Readme.MD
 
 ## Getting Started
 Git Clone this repo.
+
 Create an AWS Account and Make an IAM User with Admin acces
+
 Make Lambdas using Lambda and Fast API Folder with Script | GUI | CLI
+
 Make Dyanmo DB using Script | CLI | GUI
+
 Make S3 using Script | CLI | GUI
+
 Create API Gateways for your Apis
+
+Create account with Streamlit to publish app (note: you can even use Heroku or EC2 to publish Streamlit App)
+
+Create your github repository (Public)
+
+
 ## Prerequisites
 Python3.5+
 
