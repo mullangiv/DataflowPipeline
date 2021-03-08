@@ -11,13 +11,17 @@ Name: Vinod Kumar Mullangi(NUID : 001057553)
 
 # DataflowPipeline
 
+# Final Project
+
+Designed serverless data pipeline by leveraging AWS services to perform Fake News Detection and Sentiment Analysis utilizing FastAPI as backend and Streamlit as frontend
+
 # Assignment 1
 
 Developed a data pipeline to accomplish data as a service and the goal is to create FastAPI application to make data available using API
 
 # Assignment 2
 
-Implemented the Productionizing the pipeline using API's.
+Implemented the Productionizing the pipeline using A•	Designed serverless data pipeline by leveraging AWS services to perform Fake News Detection and Sentiment AnalysisPI's.
 
 API 1: Web Scraping
 
@@ -34,4 +38,5 @@ Implemented the sentiment analysis using API's.
 Extended Assignment 2
 
 API 5: Sentiment Analysis
+
 
